@@ -1,8 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Navbar from "./navbar";
 import { BellIcon, MenuIcon, SearchIcon } from "./icons";
+
+const pageTitles: Record<string, string> = {
+  "/": "Dashboard",
+  "/hibah": "Data Hibah",
+  "/laporan": "Laporan",
+  "/pengguna": "Pengguna",
+  "/pengaturan": "Pengaturan",
+  "/bantuan": "Bantuan",
+};
 
 const notifications = [
   {
@@ -32,27 +42,29 @@ export default function DashboardShell({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const pathname = usePathname();
+  const pageTitle = pageTitles[pathname] ?? "Dashboard";
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <Navbar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main column */}
       <div className="flex min-h-screen flex-col lg:pl-64">
         {/* Topbar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-zinc-200 bg-white/80 px-4 backdrop-blur-md sm:px-6 dark:border-zinc-800 dark:bg-zinc-900/80">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-zinc-200 bg-white/80 px-4 backdrop-blur-md sm:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 lg:hidden dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 lg:hidden"
             aria-label="Buka menu"
           >
             <MenuIcon className="h-5 w-5" />
           </button>
 
-          <div className="hidden text-sm text-zinc-500 sm:block dark:text-zinc-400">
-            <span className="text-zinc-400 dark:text-zinc-500">Beranda</span>
+          <div className="hidden text-sm text-zinc-500 sm:block">
+            <span className="text-zinc-400">Beranda</span>
             <span className="mx-2">/</span>
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">Dashboard</span>
+            <span className="font-medium text-zinc-900">{pageTitle}</span>
           </div>
 
           {/* Search */}
@@ -62,7 +74,8 @@ export default function DashboardShell({
               <input
                 type="search"
                 placeholder="Cari hibah, instansi..."
-                className="h-9 w-56 rounded-full border border-zinc-200 bg-zinc-100/70 pl-9 pr-4 text-sm outline-none transition-all duration-300 placeholder:text-zinc-400 focus:w-72 focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-zinc-700 dark:bg-zinc-800/70 dark:focus:bg-zinc-800 dark:focus:ring-indigo-500/20"
+                aria-label="Cari hibah atau instansi"
+                className="h-9 w-56 rounded-full border border-zinc-200 bg-zinc-100/70 pl-9 pr-4 text-sm outline-none transition-all duration-300 placeholder:text-zinc-400 focus:w-72 focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-500/10"
               />
             </div>
           </div>
@@ -71,8 +84,9 @@ export default function DashboardShell({
           <div className="relative ml-auto md:ml-0">
             <button
               onClick={() => setNotifOpen((v) => !v)}
-              className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
               aria-label="Notifikasi"
+              aria-expanded={notifOpen}
             >
               <BellIcon className="h-5 w-5" />
               <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
@@ -88,10 +102,14 @@ export default function DashboardShell({
                   onClick={() => setNotifOpen(false)}
                   aria-hidden="true"
                 />
-                <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl shadow-zinc-950/10 sm:w-96 dark:border-zinc-700 dark:bg-zinc-900">
-                  <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+                <div
+                  role="dialog"
+                  aria-label="Daftar notifikasi"
+                  className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl shadow-zinc-950/10 sm:w-96"
+                >
+                  <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
                     <p className="text-sm font-semibold">Notifikasi</p>
-                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
+                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
                       {notifications.filter((n) => n.unread).length} baru
                     </span>
                   </div>
@@ -99,23 +117,23 @@ export default function DashboardShell({
                     {notifications.map((n) => (
                       <li
                         key={n.title}
-                        className={`flex gap-3 border-b border-zinc-50 px-4 py-3 transition-colors hover:bg-zinc-50 last:border-0 dark:border-zinc-800/60 dark:hover:bg-zinc-800/50 ${
-                          n.unread ? "bg-indigo-50/50 dark:bg-indigo-500/5" : ""
+                        className={`flex gap-3 border-b border-zinc-50 px-4 py-3 transition-colors hover:bg-zinc-50 last:border-0 ${
+                          n.unread ? "bg-red-50/50" : ""
                         }`}
                       >
                         <span
                           className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                            n.unread ? "bg-indigo-500" : "bg-zinc-300 dark:bg-zinc-600"
+                            n.unread ? "bg-red-500" : "bg-zinc-300"
                           }`}
                         />
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          <p className="text-sm font-medium text-zinc-900">
                             {n.title}
                           </p>
-                          <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
+                          <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
                             {n.desc}
                           </p>
-                          <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">{n.time}</p>
+                          <p className="mt-1 text-[11px] text-zinc-400">{n.time}</p>
                         </div>
                       </li>
                     ))}
@@ -127,13 +145,13 @@ export default function DashboardShell({
 
           {/* Profile */}
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white ring-2 ring-white dark:ring-zinc-900">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white ring-2 ring-white">
               AD
             </div>
             <div className="hidden leading-tight sm:block">
-              <p className="text-sm font-semibold">Admin Kesbangpol</p>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Administrator</p>
-            </div>
+            <p className="text-sm font-semibold">Admin Kesbangpol</p>
+            <p className="text-[11px] text-zinc-500">Administrator</p>
+          </div>
           </div>
         </header>
 
