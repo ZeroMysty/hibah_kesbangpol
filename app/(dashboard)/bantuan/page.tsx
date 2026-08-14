@@ -1,4 +1,3 @@
-import PageHeader from "../../../components/page-header";
 import FaqAccordion from "../../../components/faq-accordion";
 import {
   BuildingIcon,
@@ -57,10 +56,6 @@ const steps = [
 export default function BantuanPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Pusat Bantuan"
-        description="Temukan jawaban atas pertanyaan umum atau hubungi tim dukungan kami."
-      />
 
       {/* Contact cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

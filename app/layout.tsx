@@ -13,17 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kesbangpol | Sistem Informasi Hibah",
+  title: "Kesbangpol | Sistem Pengarsipan Hibah",
   description: "Dashboard pengelolaan hibah Kesbangpol",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+import { Providers } from "@/components/providers";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

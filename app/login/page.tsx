@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import LoginForm from "../../components/login-form";
-import { ShieldIcon } from "../../components/icons";
 
 export const metadata: Metadata = {
-  title: "Masuk | Kesbangpol",
-  description: "Masuk ke Sistem Informasi Hibah Kesbangpol",
+  title: "Masuk | Sistem Pengarsipan Hibah Kesbangpol",
+  description: "Portal Sistem Pengarsipan Hibah Bakesbangpol Kota Bandung",
 };
 
-// Siluet skyline kota (meniru latar layanan.bandung.go.id), dibuat dengan SVG inline
+// Siluet skyline kota Bandung
 const skylineBack =
   "M0 200 L0 120 L40 120 L40 90 L80 90 L80 130 L130 130 L130 60 L170 60 L170 100 L210 100 L210 140 L260 140 L260 80 L310 80 L310 50 L350 50 L350 90 L400 90 L400 130 L450 130 L450 70 L490 70 L490 110 L530 110 L530 150 L580 150 L580 90 L620 90 L620 55 L660 55 L660 100 L700 100 L700 140 L750 140 L750 75 L790 75 L790 120 L830 120 L830 160 L880 160 L880 95 L920 95 L920 130 L970 130 L970 170 L1020 170 L1020 110 L1060 110 L1060 65 L1100 65 L1100 105 L1140 105 L1140 150 L1190 150 L1190 85 L1230 85 L1230 125 L1280 125 L1280 160 L1330 160 L1330 100 L1370 100 L1370 140 L1440 140 L1440 200 Z";
 
@@ -16,48 +16,86 @@ const skylineFront =
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-[#eef2fb]">
-      {/* Latar skyline kota */}
-      <svg
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[38vh] w-full text-[#1A237E]"
-        viewBox="0 0 1440 200"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path d={skylineBack} fill="currentColor" opacity="0.06" />
-        <path d={skylineFront} fill="currentColor" opacity="0.1" />
-      </svg>
+    <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50">
+      {/* ========================================================= */}
+      {/* PANEL KIRI: Modern Kesbangpol Crimson & Navy Split Screen */}
+      {/* ========================================================= */}
+      <div className="relative hidden lg:flex lg:w-[48%] xl:w-[45%] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#7B0B14] via-[#94111C] to-[#141B4D] p-10 xl:p-14 text-white">
+        {/* Glow & Decorative lighting */}
+        <div className="pointer-events-none absolute -left-20 -top-20 h-96 w-96 rounded-full bg-red-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -right-20 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
 
-      {/* Panel kiri: branding */}
-      <div className="relative z-10 hidden flex-1 flex-col items-center justify-center lg:flex">
-        <div className="flex flex-col items-center text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-red-600 text-white shadow-xl shadow-red-600/25">
-            <ShieldIcon className="h-10 w-10" />
+        {/* Skyline Kota di Latar Bawah */}
+        <svg
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-44 w-full text-white/10"
+          viewBox="0 0 1440 200"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path d={skylineBack} fill="currentColor" opacity="0.4" />
+          <path d={skylineFront} fill="currentColor" opacity="0.8" />
+        </svg>
+
+        {/* Konten Utama Branding */}
+        <div className="relative z-10 my-auto py-8 flex flex-col items-center text-center">
+          {/* Logo Resmi Kesbangpol */}
+          <div className="mb-6 flex justify-center">
+            <Image
+              src="/favicon.ico"
+              alt="Logo Resmi Kesbangpol Kota Bandung"
+              width={220}
+              height={220}
+              unoptimized
+              className="h-52 w-52 object-contain transition-transform duration-300 hover:scale-105"
+              priority
+            />
           </div>
-          <p className="mt-6 text-3xl font-bold tracking-tight text-zinc-900">Kesbangpol</p>
-          <p className="mt-1 text-sm text-zinc-500">Sistem Informasi Hibah</p>
-          <p className="mt-8 max-w-sm text-sm leading-6 text-zinc-500">
-            Kelola hibah daerah lebih mudah, transparan, dan akuntabel.
+
+          <p className="text-xs font-bold uppercase tracking-widest text-red-200">
+            Badan Kesatuan Bangsa dan Politik
           </p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Sistem Pengarsipan Hibah
+          </h1>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-red-100/85">
+            Portal digital terpadu untuk pengarsipan naskah perjanjian hibah (NPHD), 
+            verifikasi berkas empat bidang teknis, dan pemantauan realisasi dana hibah daerah.
+          </p>
+        </div>
+
+        {/* Footer Panel Kiri */}
+        <div className="relative z-10 text-xs text-white/50 text-center">
+          © 2026 Bakesbangpol Kota Bandung. Hak Cipta Dilindungi.
         </div>
       </div>
 
-      {/* Panel kanan: form login */}
-      <div className="relative z-10 flex w-full items-center justify-center px-4 py-12 sm:px-8 lg:w-auto lg:min-w-[700px] lg:justify-end lg:py-16 lg:pr-16 xl:pr-24">
-        <div className="w-full max-w-2xl">
-          {/* Branding versi mobile */}
-          <div className="mb-8 flex items-center justify-center gap-3 lg:hidden">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-600 text-white">
-              <ShieldIcon className="h-6 w-6" />
+      {/* ========================================================= */}
+      {/* PANEL KANAN: Login Form Card                             */}
+      {/* ========================================================= */}
+      <div className="relative flex flex-1 items-center justify-center p-6 sm:p-10 lg:p-12">
+        <div className="w-full max-w-md">
+          {/* Header Mobile Only */}
+          <div className="mb-8 flex flex-col items-center text-center lg:hidden">
+            <div className="mb-3">
+              <Image
+                src="/favicon.ico"
+                alt="Logo Kesbangpol"
+                width={80}
+                height={80}
+                unoptimized
+                className="h-20 w-20 object-contain"
+              />
             </div>
-            <div className="text-left">
-              <p className="text-lg font-bold tracking-tight text-zinc-900">Kesbangpol</p>
-              <p className="text-xs text-zinc-500">Sistem Informasi Hibah</p>
-            </div>
+            <p className="text-xs font-bold uppercase tracking-wider text-red-700">
+              Bakesbangpol Kota Bandung
+            </p>
+            <h2 className="text-xl font-extrabold text-zinc-900">
+              Sistem Pengarsipan Hibah
+            </h2>
           </div>
 
-          {/* Kartu login */}
-          <div className="rounded-lg border border-zinc-200 bg-white px-12 py-14 shadow-xl shadow-zinc-900/5 sm:px-14">
+          {/* Form Card */}
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-8 shadow-xl shadow-slate-900/5 sm:p-10">
             <LoginForm />
           </div>
         </div>

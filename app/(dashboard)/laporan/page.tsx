@@ -1,4 +1,5 @@
-import PageHeader from "../../../components/page-header";
+"use client";
+
 import StatusBadge from "../../../components/status-badge";
 import {
   ChartIcon,
@@ -90,17 +91,6 @@ export default function LaporanPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Laporan"
-        description="Pantau realisasi dana hibah dan unduh laporan berkala."
-        actions={
-          <button className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/25 transition-all hover:bg-red-500 hover:shadow-red-500/30 active:scale-[0.98]">
-            <DownloadIcon className="h-4 w-4" />
-            Unduh Semua
-          </button>
-        }
-      />
-
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {summary.map((s) => {
@@ -204,6 +194,13 @@ export default function LaporanPage() {
               Unduh laporan sesuai periode yang dibutuhkan
             </p>
           </div>
+          <button
+            onClick={() => alert("Mengunduh semua berkas laporan...")}
+            className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
+          >
+            <DownloadIcon className="h-3.5 w-3.5" />
+            <span>Unduh Semua</span>
+          </button>
         </div>
         <ul className="divide-y divide-zinc-50">
           {reports.map((r) => (

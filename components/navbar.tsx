@@ -1,30 +1,23 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useMode } from "@/context/mode-context";
 import {
+  ArchiveIcon,
+  BuildingIcon,
   ChartIcon,
   DashboardIcon,
   FolderIcon,
   HelpIcon,
   LogoutIcon,
+  PlusIcon,
   SettingsIcon,
   ShieldIcon,
   UsersIcon,
   XIcon,
 } from "./icons";
-
-const mainMenu = [
-  { name: "Dashboard", href: "/", icon: DashboardIcon },
-  { name: "Data Hibah", href: "/hibah", icon: FolderIcon, badge: "12" },
-  { name: "Laporan", href: "/laporan", icon: ChartIcon },
-  { name: "Pengguna", href: "/pengguna", icon: UsersIcon },
-];
-
-const secondaryMenu = [
-  { name: "Pengaturan", href: "/pengaturan", icon: SettingsIcon },
-  { name: "Bantuan", href: "/bantuan", icon: HelpIcon },
-];
 
 type NavbarProps = {
   open: boolean;
@@ -33,18 +26,32 @@ type NavbarProps = {
 
 export default function Navbar({ open, onClose }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { mode, bidangId, currentUser, logout } = useMode();
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  const renderItem = (
-    item: {
-      name: string;
-      href: string;
-      icon: (p: { className?: string }) => React.ReactNode;
-      badge?: string;
-    }
-  ) => {
+  const mainMenu = [
+    { name: "Beranda", href: "/", icon: DashboardIcon },
+    { name: "Data Hibah", href: "/hibah", icon: FolderIcon, badge: "12" },
+    { name: "Arsip Dokumen", href: "/arsip", icon: ArchiveIcon, badge: "48" },
+    { name: "Lembaga & Ormas", href: "/lembaga", icon: BuildingIcon },
+    { name: "Laporan", href: "/laporan", icon: ChartIcon },
+    { name: "Pengguna", href: "/pengguna", icon: UsersIcon },
+  ];
+
+  const secondaryMenu = [
+    { name: "Pengaturan", href: "/pengaturan", icon: SettingsIcon },
+    { name: "Bantuan", href: "/bantuan", icon: HelpIcon },
+  ];
+
+  const renderItem = (item: {
+    name: string;
+    href: string;
+    icon: (p: { className?: string }) => React.ReactNode;
+    badge?: string;
+  }) => {
     const active = isActive(item.href);
     const Icon = item.icon;
     return (
@@ -54,7 +61,7 @@ export default function Navbar({ open, onClose }: NavbarProps) {
           onClick={onClose}
           className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
             active
-              ? "bg-gradient-to-r from-red-50 to-transparent text-red-700"
+              ? "bg-gradient-to-r from-red-50 to-transparent text-red-700 font-semibold"
               : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
           }`}
         >
@@ -65,7 +72,7 @@ export default function Navbar({ open, onClose }: NavbarProps) {
                 : "text-zinc-400 group-hover:text-zinc-600"
             }`}
           />
-          <span className="flex-1">{item.name}</span>
+          <span className="flex-1 truncate">{item.name}</span>
           {item.badge && (
             <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white">
               {item.badge}
@@ -95,15 +102,21 @@ export default function Navbar({ open, onClose }: NavbarProps) {
       >
         {/* Brand */}
         <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-red-600 to-rose-600 text-white shadow-lg shadow-red-500/30">
-            <ShieldIcon className="h-5 w-5" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm border border-zinc-200">
+            <Image
+              src="/favicon.ico"
+              alt="Logo Kesbangpol"
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain"
+            />
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold tracking-tight text-zinc-900">
               Kesbangpol
             </p>
-            <p className="truncate text-[11px] text-zinc-500">
-              Sistem Informasi Hibah
+            <p className="truncate text-[11px] font-medium text-zinc-500">
+              Sistem Pengarsipan Hibah
             </p>
           </div>
           <button
@@ -115,11 +128,12 @@ export default function Navbar({ open, onClose }: NavbarProps) {
           </button>
         </div>
 
+
         {/* Navigation */}
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
           <div>
             <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-              Menu Utama
+              Menu Utama ({mode.toUpperCase()})
             </p>
             <ul className="space-y-1">{mainMenu.map(renderItem)}</ul>
           </div>
@@ -134,25 +148,31 @@ export default function Navbar({ open, onClose }: NavbarProps) {
         {/* User */}
         <div className="border-t border-zinc-100 p-3">
           <div className="flex items-center gap-3 rounded-xl bg-zinc-50 p-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white">
-              AD
+            <div
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${currentUser.gradient} text-xs font-bold text-white`}
+            >
+              {currentUser.initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-zinc-900">
-                Admin Kesbangpol
+              <p className="truncate text-xs font-semibold text-zinc-900">
+                {currentUser.name}
               </p>
-              <p className="truncate text-[11px] text-zinc-500">
-                admin@kesbangpol.go.id
+              <p className="truncate text-[10px] text-zinc-500">
+                {currentUser.email}
               </p>
             </div>
-            <Link
-              href="/login"
+            <button
+              onClick={() => {
+                logout();
+                onClose();
+                router.push("/login");
+              }}
               className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
-              aria-label="Keluar"
-              title="Keluar"
+              aria-label="Keluar / Ganti Akun"
+              title="Keluar / Ganti Akun"
             >
               <LogoutIcon className="h-4 w-4" />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>

@@ -1,14 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Navbar from "./navbar";
-import { BellIcon, MenuIcon, SearchIcon } from "./icons";
+import { BellIcon, MenuIcon, SearchIcon, LogoutIcon } from "./icons";
+
+import { useMode } from "@/context/mode-context";
 
 const pageTitles: Record<string, string> = {
-  "/": "Dashboard",
+  "/": "Beranda",
   "/hibah": "Data Hibah",
+  "/arsip": "Arsip Dokumen Bidang",
   "/laporan": "Laporan",
+  "/lembaga": "Lembaga & Ormas",
   "/pengguna": "Pengguna",
   "/pengaturan": "Pengaturan",
   "/bantuan": "Bantuan",
@@ -35,6 +40,9 @@ const notifications = [
   },
 ];
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
 export default function DashboardShell({
   children,
 }: {
@@ -42,8 +50,30 @@ export default function DashboardShell({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { currentUser, isLoggedIn, logout } = useMode();
   const pathname = usePathname();
+  const router = useRouter();
   const pageTitle = pageTitles[pathname] ?? "Dashboard";
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push("/login");
+    }
+  }, [isLoggedIn, router]);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-sm text-zinc-500">
+        Mengarahkan ke halaman login...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
@@ -61,27 +91,35 @@ export default function DashboardShell({
             <MenuIcon className="h-5 w-5" />
           </button>
 
-          <div className="hidden text-sm text-zinc-500 sm:block">
-            <span className="text-zinc-400">Beranda</span>
-            <span className="mx-2">/</span>
-            <span className="font-medium text-zinc-900">{pageTitle}</span>
+          <div className="hidden text-sm sm:flex sm:items-center sm:gap-1.5">
+            {pathname === "/" ? (
+              <span className="font-semibold text-zinc-900">{pageTitle}</span>
+            ) : pathname === "/pengaturan" || pathname === "/bantuan" ? (
+              <span className="font-semibold text-zinc-900">{pageTitle}</span>
+            ) : (
+              <>
+                <Link href="/" className="text-zinc-400 hover:text-red-600 transition-colors">Beranda</Link>
+                <span className="text-zinc-300">/</span>
+                <span className="font-semibold text-zinc-900">{pageTitle}</span>
+              </>
+            )}
           </div>
 
-          {/* Search */}
-          <div className="ml-auto hidden items-center md:flex">
-            <div className="relative">
-              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-              <input
-                type="search"
-                placeholder="Cari hibah, instansi..."
-                aria-label="Cari hibah atau instansi"
-                className="h-9 w-56 rounded-full border border-zinc-200 bg-zinc-100/70 pl-9 pr-4 text-sm outline-none transition-all duration-300 placeholder:text-zinc-400 focus:w-72 focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-500/10"
-              />
-            </div>
+          {/* Search Box */}
+          <div className="ml-auto relative hidden sm:block">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari data..."
+              className="h-9 w-52 rounded-xl border border-zinc-200 bg-zinc-50 pl-9 pr-4 text-sm outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white focus:w-64"
+              style={{ transition: "width 0.2s" }}
+            />
           </div>
 
           {/* Notifications */}
-          <div className="relative ml-auto md:ml-0">
+          <div className="relative">
             <button
               onClick={() => setNotifOpen((v) => !v)}
               className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
@@ -143,15 +181,33 @@ export default function DashboardShell({
             )}
           </div>
 
-          {/* Profile */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white ring-2 ring-white">
-              AD
-            </div>
-            <div className="hidden leading-tight sm:block">
-            <p className="text-sm font-semibold">Admin Kesbangpol</p>
-            <p className="text-[11px] text-zinc-500">Administrator</p>
-          </div>
+          {/* User Profile — click avatar/name to go to /pengaturan */}
+          <div className="flex items-center gap-2 border-l border-zinc-200 pl-3">
+            <button
+              onClick={() => router.push("/pengaturan")}
+              className={`flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br ${currentUser.gradient} text-xs font-bold text-white ring-2 ring-white shadow-sm transition-transform hover:scale-105 active:scale-95`}
+              title="Buka Pengaturan Profil"
+              aria-label="Profil Pengguna"
+            >
+              {currentUser.initials}
+            </button>
+            <button
+              onClick={() => router.push("/pengaturan")}
+              className="hidden leading-tight lg:block max-w-[140px] text-left hover:opacity-75 transition-opacity"
+              title="Buka Pengaturan Profil"
+            >
+              <p className="truncate text-xs font-bold text-zinc-900">{currentUser.name}</p>
+              <p className="truncate text-[10px] text-zinc-500">{currentUser.roleLabel}</p>
+            </button>
+            {/* Logout button */}
+            <button
+              onClick={handleLogout}
+              className="ml-1 rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+              title="Keluar"
+              aria-label="Keluar dari akun"
+            >
+              <LogoutIcon className="h-4 w-4" />
+            </button>
           </div>
         </header>
 
