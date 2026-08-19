@@ -32,13 +32,16 @@ export default function Navbar({ open, onClose }: NavbarProps) {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  const mainMenu = [
+   const mainMenu = [
     { name: "Beranda", href: "/", icon: DashboardIcon },
     { name: "Data Hibah", href: "/hibah", icon: FolderIcon, badge: "12" },
     { name: "Arsip Dokumen", href: "/arsip", icon: ArchiveIcon, badge: "48" },
     { name: "Lembaga & Ormas", href: "/lembaga", icon: BuildingIcon },
     { name: "Laporan", href: "/laporan", icon: ChartIcon },
-    { name: "Pengguna", href: "/pengguna", icon: UsersIcon },
+    // Menu Pengguna hanya tampil untuk mode admin, staff bidang tidak melihatnya sama sekali.
+    ...(mode === "admin"
+      ? [{ name: "Pengguna", href: "/pengguna", icon: UsersIcon }]
+      : []),
   ];
 
   const secondaryMenu = [
