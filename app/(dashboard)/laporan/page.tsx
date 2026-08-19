@@ -137,9 +137,8 @@ export default function LaporanPage() {
 
           <div className="mt-8 space-y-5">
             {[
-              { label: "Realisasi", value: 64.6, color: "bg-red-600" },
-              { label: "Menunggu verifikasi", value: 22.4, color: "bg-amber-500" },
-              { label: "Ditolak / dikembalikan", value: 13.0, color: "bg-red-500" },
+              { label: "Realisasi / Selesai", value: 75.0, color: "bg-red-600" },
+              { label: "Menunggu verifikasi", value: 25.0, color: "bg-amber-500" },
             ].map((item) => (
               <div key={item.label}>
                 <div className="mb-1.5 flex items-center justify-between text-sm">

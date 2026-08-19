@@ -74,9 +74,8 @@ const monthlyData = [
 ];
 
 const donutSegments = [
-  { label: "Disetujui", value: 62, color: "#dc2626" },
+  { label: "Selesai", value: 75, color: "#dc2626" },
   { label: "Menunggu", value: 25, color: "#f59e0b" },
-  { label: "Ditolak", value: 13, color: "#a1a1aa" },
 ];
 
 interface ProposalData {
@@ -98,7 +97,7 @@ const allProposals: ProposalData[] = [
     bidangId: 2,
     nominal: "Rp 250.000.000",
     tanggal: "05 Agu 2026",
-    status: "Disetujui",
+    status: "Selesai",
     catatanBidang: "Dokumen NPHD lengkap dan diverifikasi Bidang 2",
   },
   {
@@ -118,7 +117,7 @@ const allProposals: ProposalData[] = [
     bidangId: 3,
     nominal: "Rp 120.000.000",
     tanggal: "01 Agu 2026",
-    status: "Disetujui",
+    status: "Selesai",
     catatanBidang: "LPJ 2025 telah terverifikasi di Arsip Bidang 3",
   },
   {
@@ -128,8 +127,8 @@ const allProposals: ProposalData[] = [
     bidangId: 1,
     nominal: "Rp 45.000.000",
     tanggal: "29 Jul 2026",
-    status: "Ditolak",
-    catatanBidang: "Persyaratan SKT Ormas belum melampirkan izin Kemenkumham",
+    status: "Menunggu",
+    catatanBidang: "Persyaratan SKT Ormas — berkas dalam proses kelengkapan",
   },
   {
     id: 5,
@@ -154,14 +153,13 @@ const allProposals: ProposalData[] = [
 ];
 
 export default function DashboardPage() {
-  const { mode, bidangId, setBidangId, currentUser } = useMode();
-  const [selectedBidangView, setSelectedBidangView] = useState<BidangId>(bidangId);
+  const { mode, bidangId, currentUser } = useMode();
 
   const maxValue = Math.max(...monthlyData.map((d) => d.value));
   const circumference = 2 * Math.PI * 52;
 
   // Filter proposals for current Bidang
-  const bidangProposals = allProposals.filter((p) => p.bidangId === selectedBidangView);
+  const bidangProposals = allProposals.filter((p) => p.bidangId === bidangId);
 
   return (
     <div className="space-y-6">

@@ -1,240 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
+import { useHibah, ArsipItem } from "@/context/hibah-context";
 import {
   ArchiveIcon,
   CheckCircleIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   DocumentIcon,
   DownloadIcon,
   EyeIcon,
   FileCheckIcon,
-  FilterIcon,
   PlusIcon,
   SearchIcon,
   TrashIcon,
   XIcon,
 } from "./icons";
 
-export interface ArsipItem {
-  id: string;
-  kode: string;
-  judul: string;
-  instansi: string;
-  bidangId: BidangId;
-  jenis: "NPHD" | "Berita Acara" | "SK Hibah" | "LPJ Terverifikasi" | "Proposal & RAB";
-  tahun: string;
-  tanggal: string;
-  ukuran: string;
-  status: "Aktif" | "Permanen" | "Inaktif";
-  fileUrl?: string;
-}
-
-const mockArsip: ArsipItem[] = [
-  // BIDANG 1 — Ideologi & Wawasan Kebangsaan (Paskibra, Pramuka, PPI, Wasbang, Bela Negara)
-  {
-    id: "1",
-    kode: "ARS-B1-2026-001",
-    judul: "NPHD Pembinaan & Pelatihan Pasukan Pengibar Bendera Pusaka (Paskibraka) 2026",
-    instansi: "Paskibraka Kota (PPI)",
-    bidangId: 1,
-    jenis: "NPHD",
-    tahun: "2026",
-    tanggal: "06 Agu 2026",
-    ukuran: "4.8 MB",
-    status: "Aktif",
-  },
-  {
-    id: "2",
-    kode: "ARS-B1-2026-002",
-    judul: "LPJ Kemah Kebangsaan & Pendidikan Bela Negara Pemuda",
-    instansi: "Kwartir Cabang Gerakan Pramuka",
-    bidangId: 1,
-    jenis: "LPJ Terverifikasi",
-    tahun: "2026",
-    tanggal: "02 Agu 2026",
-    ukuran: "9.4 MB",
-    status: "Aktif",
-  },
-  {
-    id: "3",
-    kode: "ARS-B1-2026-003",
-    judul: "SK Penetapan Penerima Hibah Pemasyarakatan Pancasila & Wasbang",
-    instansi: "Yayasan Generasi Bangsa Mandiri",
-    bidangId: 1,
-    jenis: "SK Hibah",
-    tahun: "2026",
-    tanggal: "25 Jul 2026",
-    ukuran: "2.5 MB",
-    status: "Aktif",
-  },
-  {
-    id: "4",
-    kode: "ARS-B1-2025-014",
-    judul: "Berita Acara Evaluasi Lapangan Diklat Paskibraka Kota T.A. 2025",
-    instansi: "Purna Paskibraka Indonesia (PPI)",
-    bidangId: 1,
-    jenis: "Berita Acara",
-    tahun: "2025",
-    tanggal: "18 Nov 2025",
-    ukuran: "3.2 MB",
-    status: "Permanen",
-  },
-  {
-    id: "5",
-    kode: "ARS-B1-2025-074",
-    judul: "Proposal & RAB Seminar Nilai Kejuangan 45 & Wawasan Nusantara",
-    instansi: "DHC Badan Pembudayaan Kejuangan 45",
-    bidangId: 1,
-    jenis: "Proposal & RAB",
-    tahun: "2025",
-    tanggal: "10 Okt 2025",
-    ukuran: "5.3 MB",
-    status: "Permanen",
-  },
-
-  // BIDANG 2 — Politik Dalam Negeri & Ormas (Karang Taruna, KNPI, PERWARI, Ormas)
-  {
-    id: "6",
-    kode: "ARS-B2-2026-006",
-    judul: "NPHD Fasilitasi Pendidikan Politik Pemilih Pemula & Generasi Z",
-    instansi: "Komite Nasional Pemuda Indonesia (KNPI)",
-    bidangId: 2,
-    jenis: "NPHD",
-    tahun: "2026",
-    tanggal: "04 Agu 2026",
-    ukuran: "4.1 MB",
-    status: "Aktif",
-  },
-  {
-    id: "7",
-    kode: "ARS-B2-2026-007",
-    judul: "Berita Acara Verifikasi Administrasi & Faktual Ormas Kota",
-    instansi: "Persatuan Wanita Republik Indonesia (PERWARI)",
-    bidangId: 2,
-    jenis: "Berita Acara",
-    tahun: "2026",
-    tanggal: "29 Jul 2026",
-    ukuran: "2.9 MB",
-    status: "Aktif",
-  },
-  {
-    id: "8",
-    kode: "ARS-B2-2025-089",
-    judul: "LPJ Akhir Tahun Bantuan Pembinaan Karang Taruna Se-Kota",
-    instansi: "Karang Taruna Kota",
-    bidangId: 2,
-    jenis: "LPJ Terverifikasi",
-    tahun: "2025",
-    tanggal: "15 Des 2025",
-    ukuran: "8.7 MB",
-    status: "Permanen",
-  },
-  {
-    id: "9",
-    kode: "ARS-B2-2025-042",
-    judul: "SK Hibah Fasilitasi Partisipasi Politik Pemilu Serentak 2025",
-    instansi: "Lembaga Advokasi Demokrasi Masyarakat",
-    bidangId: 2,
-    jenis: "SK Hibah",
-    tahun: "2025",
-    tanggal: "12 Sep 2025",
-    ukuran: "3.6 MB",
-    status: "Permanen",
-  },
-
-  // BIDANG 3 — Ketahanan Ekonomi, Sosbud & Agama (FKUB, Dewan Kesenian, Ormas Keagamaan)
-  {
-    id: "10",
-    kode: "ARS-B3-2026-010",
-    judul: "LPJ Festival Kerukunan Umat Beragama & Harmoni Nusantara",
-    instansi: "Forum Kerukunan Umat Beragama (FKUB)",
-    bidangId: 3,
-    jenis: "LPJ Terverifikasi",
-    tahun: "2026",
-    tanggal: "28 Jul 2026",
-    ukuran: "12.4 MB",
-    status: "Aktif",
-  },
-  {
-    id: "11",
-    kode: "ARS-B3-2026-011",
-    judul: "NPHD Pembinaan Ketahanan Seni & Budaya Tradisional Daerah",
-    instansi: "Dewan Kesenian Kota",
-    bidangId: 3,
-    jenis: "NPHD",
-    tahun: "2026",
-    tanggal: "22 Jul 2026",
-    ukuran: "3.7 MB",
-    status: "Aktif",
-  },
-  {
-    id: "12",
-    kode: "ARS-B3-2025-055",
-    judul: "Berita Acara Evaluasi Lapangan Lembaga Keagamaan FKUB",
-    instansi: "Badan Kerjasama Antar Gereja (BKAG)",
-    bidangId: 3,
-    jenis: "Berita Acara",
-    tahun: "2025",
-    tanggal: "02 Okt 2025",
-    ukuran: "2.1 MB",
-    status: "Permanen",
-  },
-
-  // BIDANG 4 — Kewaspadaan Nasional & Penanganan Konflik (FKDM, Wasnas, Deteksi Dini)
-  {
-    id: "13",
-    kode: "ARS-B4-2026-013",
-    judul: "NPHD Pelatihan Sistem Deteksi Dini & Kesiapsiagaan Konflik",
-    instansi: "Forum Kewaspadaan Dini Masyarakat (FKDM)",
-    bidangId: 4,
-    jenis: "NPHD",
-    tahun: "2026",
-    tanggal: "20 Jul 2026",
-    ukuran: "3.1 MB",
-    status: "Aktif",
-  },
-  {
-    id: "14",
-    kode: "ARS-B4-2025-061",
-    judul: "LPJ Sosialisasi Pencegahan Ekstremisme & Radikalisme",
-    instansi: "Komunitas Kewaspadaan Nasional",
-    bidangId: 4,
-    jenis: "LPJ Terverifikasi",
-    tahun: "2025",
-    tanggal: "14 Agu 2025",
-    ukuran: "6.2 MB",
-    status: "Permanen",
-  },
-  {
-    id: "15",
-    kode: "ARS-B4-2025-033",
-    judul: "Berita Acara Penanganan & Pemantauan Potensi Konflik Sosial",
-    instansi: "Satgas Deteksi Dini Kota",
-    bidangId: 4,
-    jenis: "Berita Acara",
-    tahun: "2025",
-    tanggal: "19 Mei 2025",
-    ukuran: "1.9 MB",
-    status: "Permanen",
-  },
-];
-
 const jenisList = ["Semua", "NPHD", "Berita Acara", "SK Hibah", "LPJ Terverifikasi", "Proposal & RAB"];
 const currentYear = new Date().getFullYear();
 const tahunList = ["Semua", ...Array.from({ length: 5 }, (_, i) => String(currentYear - i))];
 
 export default function ArsipTable() {
-  const { mode, bidangId, setBidangId } = useMode();
+  const { mode, bidangId } = useMode();
+  const { arsipList, addArsip, deleteArsip } = useHibah();
+
   const [query, setQuery] = useState("");
   const [selectedJenis, setSelectedJenis] = useState("Semua");
   const [selectedTahun, setSelectedTahun] = useState("Semua");
   const [activeBidangFilter, setActiveBidangFilter] = useState<number | "Semua">(
     mode === "bidang" ? bidangId : "Semua"
   );
-  const [arsipList, setArsipList] = useState<ArsipItem[]>(mockArsip);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<ArsipItem | null>(null);
 
@@ -247,9 +42,18 @@ export default function ArsipTable() {
   const [newTahun, setNewTahun] = useState("2026");
   const [newTanggal, setNewTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [newNominal, setNewNominal] = useState("");
-  const [newVerifikator, setNewVerifikator] = useState("Staff Evaluator");
   const [newCatatan, setNewCatatan] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sync state when mode/bidangId updates from localStorage
+  useEffect(() => {
+    if (mode === "bidang") {
+      setActiveBidangFilter(bidangId);
+      setNewBidang(bidangId);
+      setNewKode(`ARS-B${bidangId}-2026-${Math.floor(100 + Math.random() * 900)}`);
+    }
+  }, [mode, bidangId]);
 
   const filteredArsip = arsipList.filter((item) => {
     // Mode restriction: if in Bidang mode, strictly filter to that specific bidang
@@ -270,9 +74,26 @@ export default function ArsipTable() {
     return matchesBidang && matchesJenis && matchesTahun && matchesQuery;
   });
 
-  const handleAddArchive = (e: React.FormEvent) => {
+  const handleAddArchive = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newJudul.trim() || !newInstansi.trim()) return;
+
+    setIsSubmitting(true);
+    let fileDataUrl: string | undefined = undefined;
+    let fileType: string | undefined = undefined;
+
+    if (selectedFile) {
+      fileType = selectedFile.type;
+      try {
+        fileDataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(selectedFile);
+        });
+      } catch (err) {
+        console.error("Gagal membaca file:", err);
+      }
+    }
 
     const formattedDate = new Date(newTanggal).toLocaleDateString("id-ID", {
       day: "2-digit",
@@ -280,8 +101,7 @@ export default function ArsipTable() {
       year: "numeric",
     });
 
-    const newItem: ArsipItem = {
-      id: String(Date.now()),
+    addArsip({
       kode: newKode || `ARS-B${newBidang}-${newTahun}-${Math.floor(100 + Math.random() * 900)}`,
       judul: newJudul,
       instansi: newInstansi,
@@ -291,9 +111,14 @@ export default function ArsipTable() {
       tanggal: formattedDate,
       ukuran: selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB` : `${(Math.random() * 4 + 1.5).toFixed(1)} MB`,
       status: "Aktif",
-    };
+      nominal: Number(newNominal.replace(/\D/g, "")) || undefined,
+      catatan: newCatatan,
+      fileName: selectedFile ? selectedFile.name : `${newJudul.replace(/\s+/g, "_")}.pdf`,
+      fileDataUrl,
+      fileType,
+    });
 
-    setArsipList([newItem, ...arsipList]);
+    setIsSubmitting(false);
     setShowAddModal(false);
 
     // Reset Form
@@ -358,7 +183,7 @@ export default function ArsipTable() {
         </div>
       </div>
 
-      {/* Filter Bar — Bidang + Tahun + Jenis (semua dalam satu baris) */}
+      {/* Filter Bar */}
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
         <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
           Filter:
@@ -455,26 +280,26 @@ export default function ArsipTable() {
         </div>
       </div>
 
-      {/* Main Table */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      {/* Full Main Table */}
+      <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-100 text-xs uppercase tracking-wider text-zinc-400">
-                <th className="px-5 py-3 font-semibold">Kode Arsip</th>
-                <th className="px-5 py-3 font-semibold">Judul Dokumen</th>
-                <th className="px-5 py-3 font-semibold">Bidang</th>
-                <th className="px-5 py-3 font-semibold">Jenis</th>
-                <th className="px-5 py-3 font-semibold">Tahun / Tgl</th>
-                <th className="px-5 py-3 font-semibold">Ukuran</th>
-                <th className="px-5 py-3 text-right font-semibold">Aksi</th>
+              <tr className="border-b border-zinc-100 bg-zinc-50/70 text-xs uppercase tracking-wider text-zinc-400">
+                <th className="px-5 py-3.5 font-semibold">Kode Arsip</th>
+                <th className="px-5 py-3.5 font-semibold">Judul Dokumen</th>
+                <th className="px-5 py-3.5 font-semibold">Bidang</th>
+                <th className="px-5 py-3.5 font-semibold">Jenis</th>
+                <th className="px-5 py-3.5 font-semibold">Tahun / Tgl</th>
+                <th className="px-5 py-3.5 font-semibold">Ukuran</th>
+                <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-zinc-100">
               {filteredArsip.map((item) => (
                 <tr
                   key={item.id}
-                  className="border-b border-zinc-50 transition-colors last:border-0 hover:bg-zinc-50/70"
+                  className="transition-colors hover:bg-zinc-50/80"
                 >
                   <td className="px-5 py-4">
                     <span className="font-mono text-xs font-bold text-zinc-900 bg-zinc-100 px-2 py-1 rounded">
@@ -509,20 +334,27 @@ export default function ArsipTable() {
                   <td className="px-5 py-4">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
-                        onClick={() => alert(`Mengunduh berkas arsip: ${item.judul}`)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        title="Unduh Berkas Arsip"
-                      >
-                        <DownloadIcon className="h-3.5 w-3.5" />
-                        Unduh
-                      </button>
-                      <button
                         onClick={() => setSelectedDetail(item)}
-                        className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
-                        title="Lihat Detail Dokumen"
+                        className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm"
+                        title="Lihat Detail & Pratinjau Dokumen"
                       >
-                        <EyeIcon className="h-4 w-4" />
+                        <EyeIcon className="h-3.5 w-3.5" />
+                        <span>Detail</span>
                       </button>
+
+                      {mode === "admin" && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Yakin ingin menghapus arsip "${item.judul}"?`)) {
+                              deleteArsip(item.id);
+                            }
+                          }}
+                          className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                          title="Hapus Arsip"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -530,7 +362,7 @@ export default function ArsipTable() {
 
               {filteredArsip.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-sm text-zinc-400">
+                  <td colSpan={7} className="px-5 py-16 text-center text-sm text-zinc-400">
                     Tidak ada berkas arsip yang sesuai dengan kriteria pencarian.
                   </td>
                 </tr>
@@ -538,9 +370,19 @@ export default function ArsipTable() {
             </tbody>
           </table>
         </div>
+
+        {/* Footer info showing full count */}
+        <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-5 py-3.5 text-xs text-zinc-500">
+          <p>
+            Menampilkan seluruh <strong className="font-semibold text-zinc-900">{filteredArsip.length}</strong> berkas arsip digital
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-400">Database Arsip Bakesbangpol Kota Bandung</span>
+          </div>
+        </div>
       </div>
 
-      {/* Modal Add New Archive (Lengkap & Terperinci) */}
+      {/* Modal Add New Archive */}
       {showAddModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm overflow-y-auto"
@@ -700,10 +542,10 @@ export default function ArsipTable() {
                 <label className="mb-1 block text-xs font-bold text-zinc-700">
                   Unggah Berkas PDF Dokumen Digital (Maks. 25 MB)
                 </label>
-                <div className="relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50/60 p-5 text-center hover:border-red-500 hover:bg-red-50/20 transition-all cursor-pointer">
+                <div className="relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50/60 p-4 text-center hover:border-red-500 hover:bg-red-50/20 transition-all cursor-pointer">
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx,.zip"
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         setSelectedFile(e.target.files[0]);
@@ -725,24 +567,24 @@ export default function ArsipTable() {
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      <DocumentIcon className="mx-auto h-8 w-8 text-zinc-400" />
+                      <DocumentIcon className="mx-auto h-7 w-7 text-zinc-400" />
                       <p className="text-xs font-semibold text-zinc-700">
-                        Klik atau seret file PDF naskah ke area ini
+                        Pilih file dokumen arsip (PDF / Gambar)
                       </p>
-                      <p className="text-[10px] text-zinc-400">Mendukung format PDF, DOCX, ZIP bertandatangan resmi</p>
+                      <p className="text-[10px] text-zinc-400">Dapat langsung dilihat di sistem tanpa perlu download</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Catatan / Keterangan */}
+              {/* Catatan */}
               <div>
                 <label className="mb-1 block text-xs font-bold text-zinc-700">
                   Catatan Ringkas / Keterangan Dokumen
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Tambahkan catatan khusus verifikasi atau nomor registrasi naskah..."
+                  placeholder="Tambahkan nomor registrasi naskah atau catatan khusus..."
                   value={newCatatan}
                   onChange={(e) => setNewCatatan(e.target.value)}
                   className="w-full rounded-xl border border-zinc-200 px-3.5 py-2 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
@@ -759,9 +601,10 @@ export default function ArsipTable() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98]"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98] disabled:opacity-50"
                 >
-                  Simpan & Daftarkan Arsip
+                  {isSubmitting ? "Menyimpan..." : "Simpan & Daftarkan Arsip"}
                 </button>
               </div>
             </form>
@@ -769,25 +612,35 @@ export default function ArsipTable() {
         </div>
       )}
 
-      {/* Modal Detail Berkas Arsip */}
+      {/* Modal Detail Berkas Arsip + Inline Document Viewer */}
       {selectedDetail && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm overflow-y-auto"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-lg rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-2xl">
-            <div className="flex items-start justify-between border-b border-zinc-100 pb-4">
+          <div className="w-full max-w-4xl rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-2xl my-6 max-h-[92vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-zinc-100 pb-4 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-700">
                   <ArchiveIcon className="h-6 w-6" />
                 </div>
                 <div>
-                  <span className="font-mono text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded">
-                    {selectedDetail.kode}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded">
+                      {selectedDetail.kode}
+                    </span>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white ${
+                        bidangInfo[selectedDetail.bidangId].color
+                      }`}
+                    >
+                      Bidang {selectedDetail.bidangId}
+                    </span>
+                  </div>
                   <h4 className="text-base font-bold text-zinc-900 mt-1">
-                    Detail Naskah Arsip
+                    {selectedDetail.judul}
                   </h4>
                 </div>
               </div>
@@ -799,57 +652,143 @@ export default function ArsipTable() {
               </button>
             </div>
 
-            <div className="mt-5 space-y-3.5 text-xs">
-              <div className="rounded-2xl bg-zinc-50 p-4 border border-zinc-100">
-                <p className="font-bold text-zinc-900 text-sm">{selectedDetail.judul}</p>
-                <p className="text-zinc-500 mt-0.5 font-medium">{selectedDetail.instansi}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-zinc-100 p-3 bg-white">
-                  <span className="text-zinc-400">Bidang Pengampu:</span>
-                  <p className="font-bold text-zinc-800 mt-0.5">{bidangInfo[selectedDetail.bidangId].fullName}</p>
+            {/* Body */}
+            <div className="mt-4 flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-xl border border-zinc-100 p-3 bg-zinc-50">
+                  <span className="text-zinc-400 block text-[11px]">Lembaga Penerima</span>
+                  <p className="font-bold text-zinc-800 mt-0.5 truncate">{selectedDetail.instansi}</p>
                 </div>
-                <div className="rounded-xl border border-zinc-100 p-3 bg-white">
-                  <span className="text-zinc-400">Kategori Berkas:</span>
+                <div className="rounded-xl border border-zinc-100 p-3 bg-zinc-50">
+                  <span className="text-zinc-400 block text-[11px]">Kategori Berkas</span>
                   <p className="font-bold text-zinc-800 mt-0.5">{selectedDetail.jenis}</p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl border border-zinc-100 p-3 bg-white">
-                  <span className="text-zinc-400">Tahun Anggaran:</span>
+                <div className="rounded-xl border border-zinc-100 p-3 bg-zinc-50">
+                  <span className="text-zinc-400 block text-[11px]">Tahun Anggaran</span>
                   <p className="font-bold text-zinc-800 mt-0.5">T.A. {selectedDetail.tahun}</p>
                 </div>
-                <div className="rounded-xl border border-zinc-100 p-3 bg-white">
-                  <span className="text-zinc-400">Tanggal Arsip:</span>
+                <div className="rounded-xl border border-zinc-100 p-3 bg-zinc-50">
+                  <span className="text-zinc-400 block text-[11px]">Tanggal Pengarsipan</span>
                   <p className="font-bold text-zinc-800 mt-0.5">{selectedDetail.tanggal}</p>
                 </div>
-                <div className="rounded-xl border border-zinc-100 p-3 bg-white">
-                  <span className="text-zinc-400">Ukuran File:</span>
-                  <p className="font-bold text-zinc-800 mt-0.5 font-mono">{selectedDetail.ukuran}</p>
+              </div>
+
+              {/* Inline Document Preview Box */}
+              <div className="rounded-2xl border border-zinc-200 overflow-hidden bg-zinc-900 shadow-inner">
+                <div className="flex items-center justify-between bg-zinc-800 px-4 py-2.5 text-zinc-200 border-b border-zinc-700">
+                  <div className="flex items-center gap-2">
+                    <DocumentIcon className="h-4 w-4 text-emerald-400" />
+                    <span className="font-semibold text-xs">
+                      Pratinjau Naskah Arsip Digital Resmi
+                    </span>
+                    <span className="rounded bg-zinc-700 px-2 py-0.5 text-[10px] text-zinc-300">
+                      {selectedDetail.fileName || `${selectedDetail.kode}.pdf`}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-zinc-400">{selectedDetail.ukuran}</span>
+                </div>
+
+                {/* Document Display Area */}
+                <div className="bg-zinc-100 p-4 sm:p-6 min-h-[380px] max-h-[480px] overflow-y-auto flex items-center justify-center">
+                  {selectedDetail.fileDataUrl ? (
+                    selectedDetail.fileType?.startsWith("image/") ? (
+                      /* Image Preview */
+                      <div className="max-w-full flex flex-col items-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={selectedDetail.fileDataUrl}
+                          alt="Pratinjau Berkas Arsip"
+                          className="max-h-[420px] rounded-lg shadow-lg object-contain bg-white border border-zinc-200"
+                        />
+                      </div>
+                    ) : (
+                      /* PDF Embed */
+                      <iframe
+                        src={selectedDetail.fileDataUrl}
+                        title="Pratinjau Berkas PDF"
+                        className="w-full h-[420px] rounded-lg border border-zinc-300 bg-white shadow"
+                      />
+                    )
+                  ) : (
+                    /* Simulated Official Digital Naskah Archive */
+                    <div className="w-full max-w-2xl rounded-xl bg-white p-6 sm:p-8 shadow-md border border-zinc-200 text-zinc-900 space-y-4 font-serif">
+                      {/* Kop Surat Naskah Arsip */}
+                      <div className="text-center border-b-2 border-zinc-900 pb-4">
+                        <p className="text-[11px] uppercase tracking-widest font-sans font-bold text-zinc-700">
+                          Pemerintah Daerah Kota Bandung
+                        </p>
+                        <h5 className="text-sm font-bold uppercase tracking-wider font-sans text-zinc-900">
+                          Badan Kesatuan Bangsa dan Politik
+                        </h5>
+                        <p className="text-[10px] font-sans text-zinc-500 italic mt-0.5">
+                          Arsip Resmi Naskah Perjanjian Hibah Daerah (NPHD) Terverifikasi Digital
+                        </p>
+                      </div>
+
+                      {/* Judul Naskah */}
+                      <div className="text-center py-2">
+                        <p className="font-bold text-xs uppercase underline tracking-wide">
+                          {selectedDetail.judul}
+                        </p>
+                        <p className="text-[11px] font-sans text-zinc-500 mt-1">
+                          Nomor Arsip: {selectedDetail.kode}
+                        </p>
+                      </div>
+
+                      {/* Isi Naskah */}
+                      <div className="space-y-2 text-[11px] leading-relaxed text-zinc-800 font-sans">
+                        <p>
+                          Bahwa naskah dokumen hibah berikut telah memenuhi seluruh persyaratan verifikasi administrasi dan teknis, serta telah diarsipkan secara permanen ke dalam Sistem Digital Bakesbangpol:
+                        </p>
+                        <div className="bg-zinc-50 p-3.5 rounded-lg border border-zinc-200 space-y-1.5 my-2">
+                          <p><strong>Lembaga Penerima:</strong> {selectedDetail.instansi}</p>
+                          <p><strong>Bidang Pengampu:</strong> {bidangInfo[selectedDetail.bidangId].fullName}</p>
+                          <p><strong>Jenis Dokumen:</strong> {selectedDetail.jenis}</p>
+                          <p><strong>Tahun Anggaran:</strong> T.A. {selectedDetail.tahun}</p>
+                          <p><strong>Tanggal Pengesahan:</strong> {selectedDetail.tanggal}</p>
+                          <p><strong>Status Pengarsipan:</strong> <span className="text-emerald-700 font-bold">TERDAFTAR & SAH (DIGITAL SIGNED)</span></p>
+                        </div>
+                      </div>
+
+                      {/* Tanda Tangan & Cap Digital */}
+                      <div className="flex justify-between pt-4 text-[10px] font-sans">
+                        <div className="text-center">
+                          <p>Pihak Penerima,</p>
+                          <p className="mt-8 font-bold underline">{selectedDetail.instansi}</p>
+                          <p className="text-zinc-400">Penerima Hibah Daerah</p>
+                        </div>
+                        <div className="text-center">
+                          <p>Kepala Bakesbangpol Kota Bandung,</p>
+                          <div className="my-1 inline-block rounded border border-emerald-500 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-800">
+                            TERTANDATANGANI ELEKTRONIK (BSrE)
+                          </div>
+                          <p className="mt-4 font-bold underline">Drs. H. Bambang Sukardi, M.Si</p>
+                          <p className="text-zinc-400">Pembina Utama Muda / NIP. 19680315 199303 1 005</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-6 border-t border-zinc-100 mt-6">
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-4 border-t border-zinc-100 mt-4 shrink-0">
+              <button
+                type="button"
+                onClick={() => alert(`Mengunduh berkas naskah arsip "${selectedDetail.kode} - ${selectedDetail.judul}"...`)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+              >
+                <DownloadIcon className="h-3.5 w-3.5" />
+                <span>Unduh Berkas Arsip</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setSelectedDetail(null)}
-                className="rounded-xl border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
+                className="rounded-xl bg-zinc-900 px-5 py-2 text-xs font-bold text-white hover:bg-zinc-800"
               >
                 Tutup
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  alert(`Memulai unduhan berkas naskah ${selectedDetail.kode} (${selectedDetail.judul})...`);
-                  setSelectedDetail(null);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-red-500"
-              >
-                <DownloadIcon className="h-3.5 w-3.5" />
-                <span>Unduh Berkas PDF</span>
               </button>
             </div>
           </div>

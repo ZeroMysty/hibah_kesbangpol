@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { bidangInfo, BidangId, useMode } from "@/context/mode-context";
 import {
   BuildingIcon,
@@ -196,6 +196,14 @@ export default function LembagaPage() {
   const [pic, setPic] = useState("");
   const [noTelp, setNoTelp] = useState("");
   const [alamat, setAlamat] = useState("");
+
+  // Sync state when mode/bidangId updates from localStorage
+  useEffect(() => {
+    if (mode === "bidang") {
+      setFilterBidang(bidangId);
+      setBidang(bidangId);
+    }
+  }, [mode, bidangId]);
 
   const filtered = lembagaList.filter((l) => {
     const matchBidang =
@@ -444,44 +452,46 @@ export default function LembagaPage() {
           </div>
         </div>
 
-        {/* Ringkasan Per Bidang */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {([1, 2, 3, 4] as BidangId[]).map((id) => {
-            const items = lembagaList.filter((l) => l.bidangId === id);
-            const sedang = items.filter((l) => l.status === "Sedang Mengajukan").length;
-            const selesai = items.filter((l) => l.status === "Terakhir Mengajukan").length;
-            return (
-              <div key={id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-2.5 mb-3">
-                  <span
-                    className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black text-white ${bidangInfo[id].color}`}
-                  >
-                    {id}
-                  </span>
-                  <p className="text-xs font-bold text-zinc-900">Bidang {id}</p>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-zinc-500">Total</span>
-                    <span className="font-bold text-zinc-900">{items.length} lembaga</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="flex items-center gap-1 text-amber-600">
-                      <ClockIcon className="h-3 w-3" /> Sedang
+        {/* Ringkasan Per Bidang — hanya tampil untuk Admin */}
+        {mode === "admin" && (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {([1, 2, 3, 4] as BidangId[]).map((id) => {
+              const items = lembagaList.filter((l) => l.bidangId === id);
+              const sedang = items.filter((l) => l.status === "Sedang Mengajukan").length;
+              const selesai = items.filter((l) => l.status === "Terakhir Mengajukan").length;
+              return (
+                <div key={id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black text-white ${bidangInfo[id].color}`}
+                    >
+                      {id}
                     </span>
-                    <span className="font-bold text-amber-700">{sedang}</span>
+                    <p className="text-xs font-bold text-zinc-900">Bidang {id}</p>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="flex items-center gap-1 text-emerald-600">
-                      <CheckCircleIcon className="h-3 w-3" /> Selesai
-                    </span>
-                    <span className="font-bold text-emerald-700">{selesai}</span>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-zinc-500">Total</span>
+                      <span className="font-bold text-zinc-900">{items.length} lembaga</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="flex items-center gap-1 text-amber-600">
+                        <ClockIcon className="h-3 w-3" /> Sedang
+                      </span>
+                      <span className="font-bold text-amber-700">{sedang}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="flex items-center gap-1 text-emerald-600">
+                        <CheckCircleIcon className="h-3 w-3" /> Selesai
+                      </span>
+                      <span className="font-bold text-emerald-700">{selesai}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
       {/* Modal Daftarkan Lembaga / Ormas Baru */}
       {showAddModal && (
