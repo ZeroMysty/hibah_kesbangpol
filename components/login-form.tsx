@@ -112,8 +112,8 @@ export default function LoginForm() {
       const matched =
         accounts.find((a) => a.email.toLowerCase() === email.trim().toLowerCase()) ||
         accounts[0];
-      loginWithAccount(matched.id);
-      router.push("/");
+      const acc = loginWithAccount(matched.id);
+      router.push(`/portal/u/${acc.userIndex || "0"}/${acc.sessionToken}/${acc.rolePath}/Beranda`);
     }, 600);
   };
 

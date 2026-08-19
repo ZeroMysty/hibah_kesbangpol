@@ -12,9 +12,7 @@ import {
   FolderIcon,
   HelpIcon,
   LogoutIcon,
-  PlusIcon,
   SettingsIcon,
-  ShieldIcon,
   UsersIcon,
   XIcon,
 } from "./icons";
@@ -27,35 +25,39 @@ type NavbarProps = {
 export default function Navbar({ open, onClose }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { mode, bidangId, currentUser, logout } = useMode();
+  const { mode, currentUser, logout, getUrl } = useMode();
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = (slug: string) => {
+    const segments = pathname.split("/").filter(Boolean);
+    const currentSlug = segments[segments.length - 1] || "Beranda";
+    return currentSlug.toLowerCase() === slug.toLowerCase();
+  };
 
-   const mainMenu = [
-    { name: "Beranda", href: "/", icon: DashboardIcon },
-    { name: "Data Hibah", href: "/hibah", icon: FolderIcon, badge: "12" },
-    { name: "Arsip Dokumen", href: "/arsip", icon: ArchiveIcon, badge: "48" },
-    { name: "Lembaga & Ormas", href: "/lembaga", icon: BuildingIcon },
-    { name: "Laporan", href: "/laporan", icon: ChartIcon },
+  const mainMenu = [
+    { name: "Beranda", slug: "Beranda", href: getUrl("Beranda"), icon: DashboardIcon },
+    { name: "Data Hibah", slug: "Hibah", href: getUrl("Hibah"), icon: FolderIcon, badge: "12" },
+    { name: "Arsip Dokumen", slug: "Arsip", href: getUrl("Arsip"), icon: ArchiveIcon, badge: "48" },
+    { name: "Lembaga & Ormas", slug: "Lembaga", href: getUrl("Lembaga"), icon: BuildingIcon },
+    { name: "Laporan", slug: "Laporan", href: getUrl("Laporan"), icon: ChartIcon },
     // Menu Pengguna hanya tampil untuk mode admin, staff bidang tidak melihatnya sama sekali.
     ...(mode === "admin"
-      ? [{ name: "Pengguna", href: "/pengguna", icon: UsersIcon }]
+      ? [{ name: "Pengguna", slug: "Pengguna", href: getUrl("Pengguna"), icon: UsersIcon }]
       : []),
   ];
 
   const secondaryMenu = [
-    { name: "Pengaturan", href: "/pengaturan", icon: SettingsIcon },
-    { name: "Bantuan", href: "/bantuan", icon: HelpIcon },
+    { name: "Pengaturan", slug: "Pengaturan", href: getUrl("Pengaturan"), icon: SettingsIcon },
+    { name: "Bantuan", slug: "Bantuan", href: getUrl("Bantuan"), icon: HelpIcon },
   ];
 
   const renderItem = (item: {
     name: string;
+    slug: string;
     href: string;
     icon: (p: { className?: string }) => React.ReactNode;
     badge?: string;
   }) => {
-    const active = isActive(item.href);
+    const active = isActive(item.slug);
     const Icon = item.icon;
     return (
       <li key={item.name}>
@@ -130,7 +132,6 @@ export default function Navbar({ open, onClose }: NavbarProps) {
             <XIcon className="h-5 w-5" />
           </button>
         </div>
-
 
         {/* Navigation */}
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">

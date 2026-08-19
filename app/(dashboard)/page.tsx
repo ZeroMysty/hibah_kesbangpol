@@ -90,10 +90,53 @@ interface ProposalData {
 }
 
 const allProposals: ProposalData[] = [
+  // Bidang 1
   {
-    id: 1,
-    name: "Revitalisasi Taman Budaya",
-    instansi: "Dinas Kebudayaan Kota",
+    id: 101,
+    name: "Pendidikan & Pelatihan Intensif Paskibraka Kota 2026",
+    instansi: "Paskibraka Kota (PPI)",
+    bidangId: 1,
+    nominal: "Rp 150.000.000",
+    tanggal: "10 Agu 2026",
+    status: "Selesai",
+    catatanBidang: "Dokumen NPHD lengkap dan diverifikasi Bidang 1",
+  },
+  {
+    id: 102,
+    name: "Kemah Wawasan Kebangsaan & Bela Negara Pramuka",
+    instansi: "Kwartir Cabang Gerakan Pramuka",
+    bidangId: 1,
+    nominal: "Rp 85.000.000",
+    tanggal: "08 Agu 2026",
+    status: "Menunggu",
+    catatanBidang: "Menunggu verifikasi lapangan tim evaluasi Bidang 1",
+  },
+  {
+    id: 103,
+    name: "Sosialisasi & Pemantapan Nilai Pancasila Pelajar",
+    instansi: "SMPN 4 Kota",
+    bidangId: 1,
+    nominal: "Rp 45.000.000",
+    tanggal: "29 Jul 2026",
+    status: "Menunggu",
+    catatanBidang: "Persyaratan berkas sedang dalam proses verifikasi administrasi",
+  },
+  {
+    id: 104,
+    name: "Dialog Kebangsaan Mahasiswa & Generasi Muda",
+    instansi: "Universitas Negeri",
+    bidangId: 1,
+    nominal: "Rp 60.000.000",
+    tanggal: "27 Jul 2026",
+    status: "Menunggu",
+    catatanBidang: "Verifikasi berkas administrasi dan RAB Bidang 1",
+  },
+
+  // Bidang 2
+  {
+    id: 201,
+    name: "Revitalisasi Sanggar Budaya & Karang Taruna Kota",
+    instansi: "Dinas Kebudayaan & Karang Taruna",
     bidangId: 2,
     nominal: "Rp 250.000.000",
     tanggal: "05 Agu 2026",
@@ -101,8 +144,40 @@ const allProposals: ProposalData[] = [
     catatanBidang: "Dokumen NPHD lengkap dan diverifikasi Bidang 2",
   },
   {
-    id: 2,
-    name: "Penguatan Kapasitas FKUB Kota",
+    id: 202,
+    name: "Pemberdayaan Karang Taruna Berbasis Kelurahan",
+    instansi: "Pengurus Karang Taruna Kota",
+    bidangId: 2,
+    nominal: "Rp 95.000.000",
+    tanggal: "03 Agu 2026",
+    status: "Menunggu",
+    catatanBidang: "Menunggu kelengkapan SK Kepengurusan terbaru",
+  },
+  {
+    id: 203,
+    name: "Pekan Olahraga Pemuda & Pelajar Antar Kecamatan",
+    instansi: "KONI / KNPI Kota",
+    bidangId: 2,
+    nominal: "Rp 180.000.000",
+    tanggal: "20 Jul 2026",
+    status: "Menunggu",
+    catatanBidang: "Dalam proses evaluasi proposal teknis Bidang 2",
+  },
+  {
+    id: 204,
+    name: "Festival Kebudayaan & Seni Tradisional Pasundan",
+    instansi: "Paguyuban Pasundan",
+    bidangId: 2,
+    nominal: "Rp 200.000.000",
+    tanggal: "03 Jul 2026",
+    status: "Selesai",
+    catatanBidang: "LPJ dan NPHD telah disahkan",
+  },
+
+  // Bidang 3
+  {
+    id: 301,
+    name: "Penguatan Kapasitas Kerukunan Umat Beragama (FKUB)",
     instansi: "FKUB Kota",
     bidangId: 3,
     nominal: "Rp 85.000.000",
@@ -111,9 +186,9 @@ const allProposals: ProposalData[] = [
     catatanBidang: "Menunggu verifikasi lapangan tim evaluasi Bidang 3",
   },
   {
-    id: 3,
-    name: "Festival Kerukunan Antar Umat Beragama",
-    instansi: "Panitia FKUB",
+    id: 302,
+    name: "Festival Kerukunan Lintas Agama & Dialog Toleransi",
+    instansi: "Panitia Bersama FKUB",
     bidangId: 3,
     nominal: "Rp 120.000.000",
     tanggal: "01 Agu 2026",
@@ -121,39 +196,71 @@ const allProposals: ProposalData[] = [
     catatanBidang: "LPJ 2025 telah terverifikasi di Arsip Bidang 3",
   },
   {
-    id: 4,
-    name: "Pelatihan Wawasan Kebangsaan Pelajar",
-    instansi: "SMPN 4 Kota",
-    bidangId: 1,
-    nominal: "Rp 45.000.000",
-    tanggal: "29 Jul 2026",
-    status: "Menunggu",
-    catatanBidang: "Persyaratan SKT Ormas — berkas dalam proses kelengkapan",
+    id: 303,
+    name: "Safari Dakwah & Pembinaan Rohani Kemasyarakatan",
+    instansi: "MUI Kota",
+    bidangId: 3,
+    nominal: "Rp 95.000.000",
+    tanggal: "15 Jul 2026",
+    status: "Selesai",
+    catatanBidang: "Telah diverifikasi dan disahkan Kepala Bakesbangpol",
   },
   {
-    id: 5,
-    name: "Dialog Kebangsaan Mahasiswa & Kepemudaan",
-    instansi: "Universitas Negeri",
-    bidangId: 1,
-    nominal: "Rp 60.000.000",
-    tanggal: "27 Jul 2026",
+    id: 304,
+    name: "Bantuan Sarana Forum Komunikasi Antar Gereja",
+    instansi: "Badan Musyawarah Antar Gereja (BAMAG)",
+    bidangId: 3,
+    nominal: "Rp 110.000.000",
+    tanggal: "08 Jul 2026",
     status: "Menunggu",
-    catatanBidang: "Verifikasi berkas administrasi Bidang 1",
+    catatanBidang: "Evaluasi administrasi kelayakan penerima hibah",
+  },
+
+  // Bidang 4
+  {
+    id: 401,
+    name: "Pelatihan Deteksi Dini & Early Warning System (FKDM)",
+    instansi: "Forum Kewaspadaan Dini Masyarakat",
+    bidangId: 4,
+    nominal: "Rp 95.000.000",
+    tanggal: "07 Agu 2026",
+    status: "Selesai",
+    catatanBidang: "NPHD telah ditandatangani secara elektronik",
   },
   {
-    id: 6,
-    name: "Pelatihan Deteksi Dini & Kewaspadaan Konflik",
-    instansi: "Komunitas Wasnas",
+    id: 402,
+    name: "Penyuluhan Pencegahan Narkoba & Ketahanan Wilayah",
+    instansi: "BNNK / Relawan Wasnas",
     bidangId: 4,
     nominal: "Rp 75.000.000",
-    tanggal: "25 Jul 2026",
+    tanggal: "24 Jul 2026",
+    status: "Selesai",
+    catatanBidang: "Dokumen laporan kegiatan lengkap",
+  },
+  {
+    id: 403,
+    name: "Sosialisasi Pencegahan Ekstremisme & Radikalisme",
+    instansi: "Komunitas Kewaspadaan Generasi",
+    bidangId: 4,
+    nominal: "Rp 65.000.000",
+    tanggal: "19 Jul 2026",
     status: "Menunggu",
-    catatanBidang: "Berkas teknis diterima Bidang 4",
+    catatanBidang: "Menunggu berkas rekomendasi teknis",
+  },
+  {
+    id: 404,
+    name: "Simulasi Mediasi & Penanganan Potensi Konflik Sosial",
+    instansi: "Lembaga Advokasi Damai",
+    bidangId: 4,
+    nominal: "Rp 80.000.000",
+    tanggal: "05 Jul 2026",
+    status: "Selesai",
+    catatanBidang: "Verifikasi teknis selesai",
   },
 ];
 
 export default function DashboardPage() {
-  const { mode, bidangId, currentUser } = useMode();
+  const { mode, bidangId, currentUser, getUrl } = useMode();
 
   const maxValue = Math.max(...monthlyData.map((d) => d.value));
   const circumference = 2 * Math.PI * 52;
@@ -179,14 +286,14 @@ export default function DashboardPage() {
 
       <div className="flex flex-wrap gap-3">
         <Link
-          href="/laporan"
+          href={getUrl("Laporan")}
           className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition-all hover:bg-zinc-50"
         >
           <DownloadIcon className="h-4 w-4" />
           Unduh Laporan Daerah
         </Link>
         <Link
-          href="/hibah"
+          href={getUrl("Hibah")}
           className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/25 transition-all hover:bg-red-500"
         >
           <PlusIcon className="h-4 w-4" />
@@ -316,7 +423,7 @@ export default function DashboardPage() {
             </h2>
           </div>
           <Link
-            href="/hibah"
+            href={getUrl("Hibah")}
             className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-500"
           >
             Lihat semua

@@ -1,23 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Navbar from "./navbar";
 import { BellIcon, MenuIcon, SearchIcon, LogoutIcon } from "./icons";
-
 import { useMode } from "@/context/mode-context";
-
-const pageTitles: Record<string, string> = {
-  "/": "Beranda",
-  "/hibah": "Data Hibah",
-  "/arsip": "Arsip Dokumen Bidang",
-  "/laporan": "Laporan",
-  "/lembaga": "Lembaga & Ormas",
-  "/pengguna": "Pengguna",
-  "/pengaturan": "Pengaturan",
-  "/bantuan": "Bantuan",
-};
 
 const notifications = [
   {
@@ -40,9 +28,6 @@ const notifications = [
   },
 ];
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-
 export default function DashboardShell({
   children,
 }: {
@@ -51,10 +36,26 @@ export default function DashboardShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { currentUser, isLoggedIn, logout } = useMode();
+  const { currentUser, isLoggedIn, logout, getUrl, getHomeUrl } = useMode();
   const pathname = usePathname();
   const router = useRouter();
-  const pageTitle = pageTitles[pathname] ?? "Dashboard";
+
+  // Extract page slug from pathname
+  const segments = pathname.split("/").filter(Boolean);
+  const currentSlug = segments[segments.length - 1] || "Beranda";
+
+  const pageTitleMap: Record<string, string> = {
+    beranda: "Beranda",
+    hibah: "Data Hibah",
+    arsip: "Arsip Dokumen Bidang",
+    laporan: "Laporan",
+    lembaga: "Lembaga & Ormas",
+    pengguna: "Pengguna",
+    pengaturan: "Pengaturan",
+    bantuan: "Bantuan",
+  };
+
+  const pageTitle = pageTitleMap[currentSlug.toLowerCase()] ?? "Dashboard";
 
   const handleLogout = () => {
     logout();
@@ -92,13 +93,15 @@ export default function DashboardShell({
           </button>
 
           <div className="hidden text-sm sm:flex sm:items-center sm:gap-1.5">
-            {pathname === "/" ? (
+            {currentSlug.toLowerCase() === "beranda" ? (
               <span className="font-semibold text-zinc-900">{pageTitle}</span>
-            ) : pathname === "/pengaturan" || pathname === "/bantuan" ? (
+            ) : currentSlug.toLowerCase() === "pengaturan" || currentSlug.toLowerCase() === "bantuan" ? (
               <span className="font-semibold text-zinc-900">{pageTitle}</span>
             ) : (
               <>
-                <Link href="/" className="text-zinc-400 hover:text-red-600 transition-colors">Beranda</Link>
+                <Link href={getHomeUrl()} className="text-zinc-400 hover:text-red-600 transition-colors">
+                  Beranda
+                </Link>
                 <span className="text-zinc-300">/</span>
                 <span className="font-semibold text-zinc-900">{pageTitle}</span>
               </>
@@ -184,7 +187,7 @@ export default function DashboardShell({
           {/* User Profile — click avatar/name to go to /pengaturan */}
           <div className="flex items-center gap-2 border-l border-zinc-200 pl-3">
             <button
-              onClick={() => router.push("/pengaturan")}
+              onClick={() => router.push(getUrl("Pengaturan"))}
               className={`flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br ${currentUser.gradient} text-xs font-bold text-white ring-2 ring-white shadow-sm transition-transform hover:scale-105 active:scale-95`}
               title="Buka Pengaturan Profil"
               aria-label="Profil Pengguna"
@@ -192,7 +195,7 @@ export default function DashboardShell({
               {currentUser.initials}
             </button>
             <button
-              onClick={() => router.push("/pengaturan")}
+              onClick={() => router.push(getUrl("Pengaturan"))}
               className="hidden leading-tight lg:block max-w-[140px] text-left hover:opacity-75 transition-opacity"
               title="Buka Pengaturan Profil"
             >

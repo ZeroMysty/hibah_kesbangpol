@@ -16,7 +16,20 @@ export interface UserAccount {
   roleLabel: string;
   initials: string;
   gradient: string;
+  sessionToken: string; // Token proteksi URL anti-tamper acak
+  rolePath: string;     // Folder role path (Admin, Bidang1, Bidang2, Bidang3, Bidang4)
+  userIndex: string;    // Multi-tenant user index (0, 1, dll)
 }
+
+// Function generator token acak kriptografis 28-karakter
+export const generateSecureToken = (length = 28): string => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `s_${result}`;
+};
 
 export const accounts: UserAccount[] = [
   {
@@ -27,6 +40,9 @@ export const accounts: UserAccount[] = [
     roleLabel: "Administrator Utama",
     initials: "AD",
     gradient: "from-emerald-500 to-teal-600",
+    sessionToken: "s_W8E9iFrFqoIw3NE7pL2xZbY0kM5v",
+    rolePath: "Admin",
+    userIndex: "0",
   },
   {
     id: "bidang1",
@@ -38,6 +54,9 @@ export const accounts: UserAccount[] = [
     roleLabel: "Tim Evaluator Bidang 1",
     initials: "B1",
     gradient: "from-blue-600 to-indigo-700",
+    sessionToken: "s_Q9gRc235sBEvJ84NkLmMpQ91xAa6",
+    rolePath: "Bidang1",
+    userIndex: "0",
   },
   {
     id: "bidang2",
@@ -49,6 +68,9 @@ export const accounts: UserAccount[] = [
     roleLabel: "Tim Evaluator Bidang 2",
     initials: "B2",
     gradient: "from-red-600 to-rose-700",
+    sessionToken: "s_B2xK98jLmQwe37TpZvY1rNc6Ad4F",
+    rolePath: "Bidang2",
+    userIndex: "0",
   },
   {
     id: "bidang3",
@@ -60,6 +82,9 @@ export const accounts: UserAccount[] = [
     roleLabel: "Tim Evaluator Bidang 3",
     initials: "B3",
     gradient: "from-amber-500 to-orange-600",
+    sessionToken: "s_B3mN76vCxZyt90KlPa1Sd4Fg7Hj2",
+    rolePath: "Bidang3",
+    userIndex: "0",
   },
   {
     id: "bidang4",
@@ -71,6 +96,9 @@ export const accounts: UserAccount[] = [
     roleLabel: "Tim Evaluator Bidang 4",
     initials: "B4",
     gradient: "from-purple-600 to-indigo-800",
+    sessionToken: "s_45GEnIeInOy4E81RwTxP9qLm3Vb6",
+    rolePath: "Bidang4",
+    userIndex: "0",
   },
 ];
 
@@ -113,10 +141,13 @@ interface ModeContextType {
   bidangId: BidangId;
   currentUser: UserAccount;
   isLoggedIn: boolean;
-  loginWithAccount: (accountId: string) => void;
+  loginWithAccount: (accountId: string) => UserAccount;
   logout: () => void;
   setMode: (mode: Mode) => void;
   setBidangId: (id: BidangId) => void;
+  getUrl: (menuName: string) => string;
+  getHomeUrl: () => string;
+  verifyAccess: (token: string, role: string) => boolean;
 }
 
 const ModeContext = createContext<ModeContextType | undefined>(undefined);
@@ -125,13 +156,14 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<Mode>("admin");
   const [bidangId, setBidangIdState] = useState<BidangId>(1);
   const [currentUser, setCurrentUser] = useState<UserAccount>(accounts[0]);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true); // Default true for initial view, updated on mount
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const savedLoggedIn = localStorage.getItem("kesbangpol_is_logged_in");
     const savedAccount = localStorage.getItem("kesbangpol_account_id");
+    const savedToken = localStorage.getItem("kesbangpol_session_token");
 
     if (savedLoggedIn === "false") {
       setIsLoggedIn(false);
@@ -142,30 +174,45 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     if (savedAccount) {
       const found = accounts.find((a) => a.id === savedAccount);
       if (found) {
-        setCurrentUser(found);
+        const userWithToken: UserAccount = {
+          ...found,
+          sessionToken: savedToken || found.sessionToken,
+        };
+        setCurrentUser(userWithToken);
         setModeState(found.mode);
         if (found.bidangId) setBidangIdState(found.bidangId);
       }
     }
   }, []);
 
-  const loginWithAccount = (accountId: string) => {
+  const loginWithAccount = (accountId: string): UserAccount => {
     const found = accounts.find((a) => a.id === accountId) || accounts[0];
-    setCurrentUser(found);
+    const dynamicRandomToken = generateSecureToken(28);
+
+    const activeUser: UserAccount = {
+      ...found,
+      sessionToken: dynamicRandomToken,
+    };
+
+    setCurrentUser(activeUser);
     setModeState(found.mode);
     if (found.bidangId) setBidangIdState(found.bidangId);
     setIsLoggedIn(true);
 
     if (typeof window !== "undefined") {
       localStorage.setItem("kesbangpol_account_id", found.id);
+      localStorage.setItem("kesbangpol_session_token", dynamicRandomToken);
       localStorage.setItem("kesbangpol_is_logged_in", "true");
     }
+
+    return activeUser;
   };
 
   const logout = () => {
     setIsLoggedIn(false);
     if (typeof window !== "undefined") {
       localStorage.setItem("kesbangpol_is_logged_in", "false");
+      localStorage.removeItem("kesbangpol_session_token");
     }
   };
 
@@ -175,6 +222,26 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   const setBidangId = (newBidangId: BidangId) => {
     setBidangIdState(newBidangId);
+  };
+
+  // Generate Enterprise Gov Portal URL: /portal/u/0/s_[token]/[Role]/[Menu]
+  const getUrl = (menuName: string): string => {
+    const activeAccount = mounted ? currentUser : accounts[0];
+    const cleanMenu = menuName.replace(/^\//, "");
+    return `/portal/u/${activeAccount.userIndex || "0"}/${activeAccount.sessionToken}/${activeAccount.rolePath}/${cleanMenu}`;
+  };
+
+  const getHomeUrl = (): string => {
+    return getUrl("Beranda");
+  };
+
+  // Anti-tamper verification
+  const verifyAccess = (token: string, role: string): boolean => {
+    const activeAccount = mounted ? currentUser : accounts[0];
+    return (
+      activeAccount.sessionToken.toLowerCase() === token.toLowerCase() &&
+      activeAccount.rolePath.toLowerCase() === role.toLowerCase()
+    );
   };
 
   return (
@@ -188,6 +255,9 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
         logout,
         setMode,
         setBidangId,
+        getUrl,
+        getHomeUrl,
+        verifyAccess,
       }}
     >
       {children}

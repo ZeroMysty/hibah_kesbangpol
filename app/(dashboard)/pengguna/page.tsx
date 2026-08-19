@@ -10,7 +10,7 @@ import UserTable from "../../../components/user-table";
 import { LockIcon } from "../../../components/icons";
 
 export default function PenggunaPage() {
-  const { mode } = useMode();
+  const { mode, getHomeUrl } = useMode();
 
   if (mode !== "admin") {
     return (
@@ -26,7 +26,7 @@ export default function PenggunaPage() {
           </p>
         </div>
         <Link
-          href="/"
+          href={getHomeUrl()}
           className="mt-2 inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/25 transition-all hover:bg-red-500 active:scale-[0.98]"
         >
           Kembali ke Beranda
