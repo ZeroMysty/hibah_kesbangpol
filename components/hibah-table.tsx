@@ -2,40 +2,77 @@
 
 import { useState, useEffect } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
-import { useHibah, ProposalItem, ProposalStatus } from "@/context/hibah-context";
 import {
+  useHibah,
+  ProposalItem,
+  LemariArsip,
+  LEMARI_OPTIONS,
+} from "@/context/hibah-context";
+import StatusBadge, { RetentionBadge } from "./status-badge";
+import {
+  ArchiveIcon,
   CheckCircleIcon,
   ChevronDownIcon,
   DocumentIcon,
   DownloadIcon,
   EyeIcon,
+  PencilIcon,
   PlusIcon,
   SearchIcon,
   TrashIcon,
   XIcon,
-  ClockIcon,
 } from "./icons";
 
-const statuses = ["Semua", "Selesai", "Menunggu"];
+const lemariFilterList = [
+  "Semua",
+  "Lemari Arsip 01",
+  "Lemari Arsip 02",
+  "Lemari Arsip 03",
+  "Lemari Arsip 04",
+  "Lemari Arsip Khusus",
+];
 
 const formatRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 
 export default function HibahTable() {
   const { mode, bidangId } = useMode();
-  const { proposals, addProposal, updateProposalStatus, deleteProposal } = useHibah();
+  const {
+    proposals,
+    addProposal,
+    updateProposal,
+    updateProposalLemari,
+    deleteProposal,
+    isOlderThan5Years,
+  } = useHibah();
 
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("Semua");
+  const [filterLemari, setFilterLemari] = useState("Semua");
   const [filterBidang, setFilterBidang] = useState<number | "Semua">(
     mode === "bidang" ? bidangId : "Semua"
   );
+  // Auto-hide documents older than 5 years (permanent — only Arsip Hibah can show these)
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editInstansi, setEditInstansi] = useState("");
+  const [editKategori, setEditKategori] = useState("");
+  const [editNominal, setEditNominal] = useState("");
+  const [editPic, setEditPic] = useState("");
+  const [editNoTelp, setEditNoTelp] = useState("");
+  const [editCatatan, setEditCatatan] = useState("");
 
   // Form states for New Proposal
   const [newName, setNewName] = useState("");
   const [newInstansi, setNewInstansi] = useState("");
-  const [newBidangId, setNewBidangId] = useState<BidangId>(mode === "bidang" ? bidangId : 1);
+  const [newBidangId, setNewBidangId] = useState<BidangId>(
+    mode === "bidang" ? bidangId : 1
+  );
+  const [newLemari, setNewLemari] = useState<LemariArsip>(
+    mode === "bidang"
+      ? (`Lemari Arsip 0${bidangId}` as LemariArsip)
+      : "Lemari Arsip 01"
+  );
   const [newKategori, setNewKategori] = useState("Seni Budaya");
   const [newNominal, setNewNominal] = useState("");
   const [newPic, setNewPic] = useState("");
@@ -58,19 +95,26 @@ export default function HibahTable() {
     if (mode === "bidang") {
       setFilterBidang(bidangId);
       setNewBidangId(bidangId);
+      setNewLemari(`Lemari Arsip 0${bidangId}` as LemariArsip);
     }
   }, [mode, bidangId]);
 
   const filtered = proposals.filter((p) => {
+    // Hard filter: documents older than 5 years are not shown here
+    // They are accessible exclusively via the Arsip Hibah page
+    if (isOlderThan5Years(p.tahun || p.tanggal)) return false;
+
     const matchesQuery =
       p.name.toLowerCase().includes(query.toLowerCase()) ||
       p.instansi.toLowerCase().includes(query.toLowerCase());
-    const matchesStatus = status === "Semua" || p.status === status;
+    const matchesLemari =
+      filterLemari === "Semua" || p.lemariArsip === filterLemari;
     const matchesBidang =
       mode === "bidang"
         ? p.bidangId === bidangId
         : filterBidang === "Semua" || p.bidangId === filterBidang;
-    return matchesQuery && matchesStatus && matchesBidang;
+
+    return matchesQuery && matchesLemari && matchesBidang;
   });
 
   const handleAddProposal = async (e: React.FormEvent) => {
@@ -84,6 +128,7 @@ export default function HibahTable() {
       name: newName,
       instansi: newInstansi,
       bidangId: newBidangId,
+      lemariArsip: newLemari,
       kategori: newKategori,
       nominal: numericNominal,
       pic: newPic,
@@ -102,17 +147,16 @@ export default function HibahTable() {
     setNewNoTelp("");
     setNewFile(null);
 
-    showToast("Dokumen permohonan berhasil diunggah! Status: Menunggu / Proses.");
+    showToast(`Dokumen usulan hibah berhasil diarsipkan ke ${newLemari}!`);
   };
 
-  const handleChangeStatus = (id: number, newStatus: ProposalStatus, proposalName: string) => {
-    updateProposalStatus(id, newStatus);
-
-    if (newStatus === "Selesai") {
-      showToast(`Status "${proposalName}" telah diubah ke SELESAI / DITERIMA dan otomatis dipindahkan ke Arsip Dokumen.`);
-    } else {
-      showToast(`Status "${proposalName}" diubah menjadi MENUNGGU / PROSES.`);
-    }
+  const handleChangeLemari = (
+    id: number,
+    targetLemari: LemariArsip,
+    proposalName: string
+  ) => {
+    updateProposalLemari(id, targetLemari);
+    showToast(`Dokumen "${proposalName}" telah dipindahkan ke ${targetLemari}.`);
   };
 
   return (
@@ -171,21 +215,22 @@ export default function HibahTable() {
 
         <div className="h-4 w-px bg-zinc-200 hidden sm:block" />
 
-        {/* Status Dropdown */}
+        {/* Lemari Arsip Dropdown */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-zinc-500">Status:</span>
+          <span className="text-xs font-semibold text-zinc-500">Lemari:</span>
           <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            value={filterLemari}
+            onChange={(e) => setFilterLemari(e.target.value)}
             className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
           >
-            {statuses.map((s) => (
+            {lemariFilterList.map((s) => (
               <option key={s} value={s}>
-                {s === "Semua" ? "Semua Status" : s}
+                {s === "Semua" ? "Semua Lemari" : s}
               </option>
             ))}
           </select>
         </div>
+
 
         {/* Search & Actions on Right */}
         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -201,7 +246,7 @@ export default function HibahTable() {
           </div>
 
           <button
-            onClick={() => alert("Mengunduh Rekap CSV Hibah...")}
+            onClick={() => alert("Mengunduh Rekap CSV Hibah Berdasarkan Lemari Arsip...")}
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-900"
             title="Export Rekap CSV"
           >
@@ -219,123 +264,123 @@ export default function HibahTable() {
         </div>
       </div>
 
-      {/* Full Table (Full-height without restrictive height truncation) */}
+      {/* Full Table */}
       <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto no-scrollbar">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/70 text-xs uppercase tracking-wider text-zinc-400">
                 <th className="px-5 py-3.5 font-semibold">Nama Usulan Hibah</th>
                 <th className="px-5 py-3.5 font-semibold">Lembaga Pemohon</th>
-                <th className="px-5 py-3.5 font-semibold">Tujuan Bidang</th>
-                <th className="px-5 py-3.5 font-semibold">Kategori</th>
-                <th className="px-5 py-3.5 font-semibold">Nominal Diajukan</th>
-                <th className="px-5 py-3.5 font-semibold">Status Berkas</th>
-                <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
+                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Tujuan Bidang</th>
+                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Kategori</th>
+                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Nominal Diajukan</th>
+                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Lemari Arsip</th>
+                <th className="px-5 py-3.5 text-left font-semibold whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {filtered.map((p) => (
-                <tr
-                  key={p.id}
-                  className="transition-colors hover:bg-zinc-50/80"
-                >
-                  <td className="px-5 py-4 font-semibold text-zinc-900">
-                    <p className="font-semibold text-zinc-900">{p.name}</p>
-                    {p.fileName && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-normal text-zinc-400 mt-0.5">
-                        <DocumentIcon className="h-3 w-3 text-zinc-400" />
-                        {p.fileName}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 text-xs text-zinc-600 font-medium">{p.instansi}</td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white ${
-                        bidangInfo[p.bidangId].color
-                      }`}
-                    >
-                      Bidang {p.bidangId}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">
-                      {p.kategori}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 font-bold tabular-nums text-zinc-900">
-                    {formatRupiah(p.nominal)}
-                  </td>
-
-                  {/* Spreadsheet-like Simple Status Selector (No cut-off, Excel Style) */}
-                  <td className="px-5 py-4">
-                    <div className="relative inline-flex items-center">
-                      <select
-                        value={p.status}
-                        onChange={(e) =>
-                          handleChangeStatus(p.id, e.target.value as ProposalStatus, p.name)
-                        }
-                        className={`cursor-pointer appearance-none rounded-full py-1.5 pl-6 pr-7 text-xs font-bold ring-1 ring-inset outline-none transition-all shadow-sm ${
-                          p.status === "Selesai"
-                            ? "bg-emerald-50 text-emerald-700 ring-emerald-600/25 hover:bg-emerald-100/80"
-                            : "bg-amber-50 text-amber-700 ring-amber-600/25 hover:bg-amber-100/80"
-                        }`}
-                        title="Klik untuk mengubah status (Menunggu / Selesai)"
-                      >
-                        <option value="Menunggu">Menunggu</option>
-                        <option value="Selesai">Selesai</option>
-                      </select>
-                      {/* Dot indicator */}
+              {filtered.map((p) => {
+                return (
+                  <tr
+                    key={p.id}
+                    className="transition-colors hover:bg-zinc-50/80"
+                  >
+                    <td className="px-5 py-4 font-semibold text-zinc-900">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-zinc-900">{p.name}</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] font-normal text-zinc-400 mt-0.5 whitespace-nowrap">
+                        <span>Tahun {p.tahun || p.tanggal}</span>
+                        {p.fileName && (
+                          <span className="inline-flex items-center gap-1">
+                            &bull; <DocumentIcon className="h-3 w-3 text-zinc-400" />
+                            {p.fileName}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-xs text-zinc-600 font-medium">{p.instansi}</td>
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <span
-                        className={`pointer-events-none absolute left-2.5 h-1.5 w-1.5 rounded-full ${
-                          p.status === "Selesai" ? "bg-emerald-600" : "bg-amber-600"
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white whitespace-nowrap shrink-0 ${
+                          bidangInfo[p.bidangId].color
                         }`}
-                      />
-                      {/* Down arrow */}
-                      <ChevronDownIcon
-                        className={`pointer-events-none absolute right-2 h-3.5 w-3.5 ${
-                          p.status === "Selesai" ? "text-emerald-700" : "text-amber-700"
-                        }`}
-                      />
-                    </div>
-                  </td>
-
-                  {/* Aksi */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => setSelectedProposal(p)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm"
-                        title="Lihat Detail & Dokumen"
                       >
-                        <EyeIcon className="h-3.5 w-3.5" />
-                        <span>Detail</span>
-                      </button>
+                        Bidang {p.bidangId}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600 whitespace-nowrap shrink-0">
+                        {p.kategori}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 font-bold tabular-nums text-zinc-900 whitespace-nowrap">
+                      {formatRupiah(p.nominal)}
+                    </td>
 
-                      {mode === "admin" && (
-                        <button
-                          onClick={() => {
-                            if (confirm(`Yakin ingin menghapus proposal "${p.name}"?`)) {
-                              deleteProposal(p.id);
-                              showToast(`Proposal "${p.name}" telah dihapus.`);
-                            }
-                          }}
-                          className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                          title="Hapus Proposal"
+                    {/* Spreadsheet-like Lemari Arsip Selector */}
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <div className="relative inline-flex items-center">
+                        <select
+                          value={p.lemariArsip}
+                          onChange={(e) =>
+                            handleChangeLemari(
+                              p.id,
+                              e.target.value as LemariArsip,
+                              p.name
+                            )
+                          }
+                          className="cursor-pointer appearance-none rounded-full py-1.5 pl-3.5 pr-7 text-xs font-bold ring-1 ring-inset outline-none transition-all shadow-sm bg-white hover:bg-zinc-50 whitespace-nowrap shrink-0"
+                          title="Klik untuk memindahkan ke Lemari Arsip lain"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          {LEMARI_OPTIONS.map((opt) => (
+                            <option key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                        {/* Down arrow */}
+                        <ChevronDownIcon className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-zinc-500" />
+                      </div>
+                    </td>
+
+                    {/* Aksi */}
+                    <td className="px-5 py-4 whitespace-nowrap text-left">
+                      <div className="flex items-center justify-start gap-1.5">
+                        <button
+                          onClick={() => setSelectedProposal(p)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm whitespace-nowrap shrink-0"
+                          title="Lihat Detail & Dokumen"
+                        >
+                          <EyeIcon className="h-3.5 w-3.5" />
+                          <span>Detail</span>
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+
+                        {mode === "admin" && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Yakin ingin menghapus dokumen "${p.name}"?`)) {
+                                deleteProposal(p.id);
+                                showToast(`Dokumen "${p.name}" telah dihapus.`);
+                              }
+                            }}
+                            className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            title="Hapus Usulan"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-5 py-16 text-center text-sm text-zinc-400">
-                    Tidak ada proposal yang cocok dengan kriteria filter.
+                    Tidak ada usulan hibah yang cocok dengan kriteria filter.
                   </td>
                 </tr>
               )}
@@ -343,25 +388,21 @@ export default function HibahTable() {
           </table>
         </div>
 
-        {/* Footer info showing full count */}
+        {/* Footer info */}
         <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-5 py-3.5 text-xs text-zinc-500">
           <p>
-            Menampilkan seluruh <strong className="font-semibold text-zinc-900">{filtered.length}</strong> data usulan hibah
+            Menampilkan <strong className="font-semibold text-zinc-900">{filtered.length}</strong> data usulan hibah aktif
+            <span className="text-zinc-400 ml-1">(5 tahun terakhir)</span>
           </p>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-[11px] text-zinc-500">
-              <span className="h-2 w-2 rounded-full bg-amber-500" />
-              Menunggu: {filtered.filter((p) => p.status === "Menunggu").length}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] text-zinc-500">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Selesai: {filtered.filter((p) => p.status === "Selesai").length}
+            <span className="text-xs text-zinc-500">
+              Penyimpanan: 5 Lemari Arsip Aktif
             </span>
           </div>
         </div>
       </div>
 
-      {/* Modal Form Tambah Permohonan Usulan Hibah Baru */}
+      {/* Modal Form Tambah Usulan Hibah Baru */}
       {showAddModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm overflow-y-auto"
@@ -372,10 +413,10 @@ export default function HibahTable() {
             <div className="flex items-start justify-between border-b border-zinc-100 pb-4">
               <div>
                 <h3 className="text-xl font-bold text-zinc-900">
-                  Formulir Permohonan Hibah Baru
+                  Formulir Pengarsipan Hibah Baru
                 </h3>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  Input data pengajuan proposal hibah. Berkas yang disimpan akan ditetapkan berstatus <strong className="text-amber-600">Menunggu</strong> dan belum masuk ke Arsip.
+                  Input data usulan hibah dan tentukan Lemari Arsip penyimpanan berkas fisik & digital.
                 </p>
               </div>
               <button
@@ -438,7 +479,11 @@ export default function HibahTable() {
                   </label>
                   <select
                     value={newBidangId}
-                    onChange={(e) => setNewBidangId(Number(e.target.value) as BidangId)}
+                    onChange={(e) => {
+                      const id = Number(e.target.value) as BidangId;
+                      setNewBidangId(id);
+                      setNewLemari(`Lemari Arsip 0${id}` as LemariArsip);
+                    }}
                     className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
                   >
                     {([1, 2, 3, 4] as BidangId[]).map((id) => (
@@ -449,6 +494,25 @@ export default function HibahTable() {
                   </select>
                 </div>
 
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-zinc-700">
+                    Penempatan Lemari Arsip *
+                  </label>
+                  <select
+                    value={newLemari}
+                    onChange={(e) => setNewLemari(e.target.value as LemariArsip)}
+                    className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-bold text-zinc-800 outline-none focus:border-red-400 bg-zinc-50"
+                  >
+                    {LEMARI_OPTIONS.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.label} - {opt.desc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
                     Kategori Program / Kegiatan *
@@ -466,9 +530,7 @@ export default function HibahTable() {
                     <option value="Kawasan">Kewaspadaan & Pencegahan Konflik</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
                     Nama Penanggung Jawab (PIC)
@@ -481,25 +543,12 @@ export default function HibahTable() {
                     className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400"
                   />
                 </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Nomor Kontak / WhatsApp PIC
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="0812-xxxx-xxxx"
-                    value={newNoTelp}
-                    onChange={(e) => setNewNoTelp(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400"
-                  />
-                </div>
               </div>
 
               {/* Upload Berkas Proposal */}
               <div>
                 <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Unggah Dokumen Proposal & Rencana Anggaran Biaya (RAB) *
+                  Unggah Dokumen Berkas Hibah (NPHD/Proposal/LPJ) *
                 </label>
                 <div className="relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50/60 p-4 text-center hover:border-red-500 hover:bg-red-50/20 transition-all cursor-pointer">
                   <input
@@ -528,7 +577,7 @@ export default function HibahTable() {
                     <div className="space-y-1">
                       <DocumentIcon className="mx-auto h-7 w-7 text-zinc-400" />
                       <p className="text-xs font-semibold text-zinc-700">
-                        Pilih file dokumen proposal (PDF / Dokumen / Gambar)
+                        Pilih file dokumen hibah (PDF / Dokumen / Gambar)
                       </p>
                       <p className="text-[10px] text-zinc-400">Dokumen dapat langsung dilihat di sistem tanpa perlu diunduh</p>
                     </div>
@@ -536,10 +585,10 @@ export default function HibahTable() {
                 </div>
               </div>
 
-              {/* Status Notice */}
-              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-800 flex items-center gap-2">
-                <ClockIcon className="h-4 w-4 shrink-0 text-amber-600" />
-                <span>Dokumen yang diunggah akan otomatis memiliki status <strong>Menunggu</strong> dan belum masuk ke Arsip.</span>
+              {/* Status & Storage Notice */}
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3 text-xs text-zinc-700 flex items-center gap-2">
+                <ArchiveIcon className="h-4 w-4 shrink-0 text-red-600" />
+                <span>Dokumen akan tersimpan di <strong>{newLemari}</strong> dan terintegrasi otomatis ke sistem arsip digital.</span>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
@@ -555,7 +604,7 @@ export default function HibahTable() {
                   disabled={isSubmitting}
                   className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98] disabled:opacity-50"
                 >
-                  {isSubmitting ? "Menyimpan Dokumen..." : "Simpan & Daftarkan Usulan"}
+                  {isSubmitting ? "Menyimpan Berkas..." : "Simpan & Masukkan ke Lemari Arsip"}
                 </button>
               </div>
             </form>
@@ -583,45 +632,132 @@ export default function HibahTable() {
                     Bidang {selectedProposal.bidangId}
                   </span>
                   <span className="text-xs text-zinc-400">• {selectedProposal.kategori}</span>
+                  {isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal) && (
+                    <RetentionBadge isOlder={true} />
+                  )}
                 </div>
                 <h4 className="text-lg font-bold text-zinc-900">
                   {selectedProposal.name}
                 </h4>
                 <p className="text-xs text-zinc-500 font-medium">{selectedProposal.instansi}</p>
               </div>
-              <button
-                onClick={() => setSelectedProposal(null)}
-                className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
-              >
-                <XIcon className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {mode === "admin" && !isEditing && (
+                  <button
+                    onClick={() => {
+                      setIsEditing(true);
+                      setEditName(selectedProposal.name);
+                      setEditInstansi(selectedProposal.instansi);
+                      setEditKategori(selectedProposal.kategori);
+                      setEditNominal(selectedProposal.nominal.toString());
+                      setEditPic(selectedProposal.pic || "");
+                      setEditNoTelp(selectedProposal.noTelp || "");
+                      setEditCatatan(selectedProposal.catatan || "");
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition"
+                  >
+                    <PencilIcon className="h-3.5 w-3.5" />
+                    Edit
+                  </button>
+                )}
+                <button
+                  onClick={() => { setSelectedProposal(null); setIsEditing(false); }}
+                  className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                >
+                  <XIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
-            {/* Content Body with Tabs / Info & Document Viewer */}
+            {/* Content Body */}
             <div className="mt-4 flex-1 overflow-y-auto space-y-5 pr-1 text-xs">
+
+              {/* ---- Edit Panel ---- */}
+              {isEditing && (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
+                  <p className="text-xs font-bold text-blue-800 mb-1">Mode Edit — Ubah Data Usulan</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Nama Usulan</label>
+                      <input value={editName} onChange={e => setEditName(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Lembaga Pemohon</label>
+                      <input value={editInstansi} onChange={e => setEditInstansi(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Kategori</label>
+                      <input value={editKategori} onChange={e => setEditKategori(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Nominal (angka)</label>
+                      <input type="number" value={editNominal} onChange={e => setEditNominal(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">PIC / Kontak</label>
+                      <input value={editPic} onChange={e => setEditPic(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">No. Telepon</label>
+                      <input value={editNoTelp} onChange={e => setEditNoTelp(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Catatan</label>
+                    <textarea value={editCatatan} onChange={e => setEditCatatan(e.target.value)} rows={2}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 resize-none" />
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        const updates = {
+                          name: editName,
+                          instansi: editInstansi,
+                          kategori: editKategori,
+                          nominal: parseFloat(editNominal) || selectedProposal.nominal,
+                          pic: editPic,
+                          noTelp: editNoTelp,
+                          catatan: editCatatan,
+                        };
+                        updateProposal(selectedProposal.id, updates);
+                        setSelectedProposal({ ...selectedProposal, ...updates });
+                        setIsEditing(false);
+                        showToast("Data berhasil diperbarui.");
+                      }}
+                      className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition"
+                    >
+                      Simpan Perubahan
+                    </button>
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Metadata Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-xl bg-zinc-50 p-3 border border-zinc-100">
-                  <span className="text-zinc-400 block text-[11px]">Nominal Pengajuan</span>
+                  <span className="text-zinc-400 block text-[11px]">Nominal Hibah</span>
                   <p className="font-bold text-zinc-900 text-sm mt-0.5">{formatRupiah(selectedProposal.nominal)}</p>
                 </div>
                 <div className="rounded-xl bg-zinc-50 p-3 border border-zinc-100">
-                  <span className="text-zinc-400 block text-[11px]">Status Saat Ini</span>
+                  <span className="text-zinc-400 block text-[11px]">Lokasi Lemari Arsip</span>
                   <div className="mt-1">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${
-                        selectedProposal.status === "Selesai"
-                          ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
-                          : "bg-amber-50 text-amber-700 ring-amber-600/20"
-                      }`}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                      {selectedProposal.status}
-                    </span>
+                    <StatusBadge status={selectedProposal.lemariArsip} />
                   </div>
                 </div>
                 <div className="rounded-xl bg-zinc-50 p-3 border border-zinc-100">
-                  <span className="text-zinc-400 block text-[11px]">Tanggal Masuk</span>
+                  <span className="text-zinc-400 block text-[11px]">Tahun / Tgl Masuk</span>
                   <p className="font-semibold text-zinc-800 mt-0.5">{selectedProposal.tanggal}</p>
                 </div>
                 <div className="rounded-xl bg-zinc-50 p-3 border border-zinc-100">
@@ -630,43 +766,31 @@ export default function HibahTable() {
                 </div>
               </div>
 
-              {/* Status Action Inside Detail */}
-              <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50/70 p-3.5">
+              {/* Quick Lemari Switcher Inside Detail */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl border border-zinc-200 bg-zinc-50/70 p-3.5">
                 <div>
-                  <p className="font-bold text-zinc-900 text-xs">Ubah Status Pengajuan</p>
+                  <p className="font-bold text-zinc-900 text-xs">Pindahkan Lokasi Lemari Arsip</p>
                   <p className="text-[11px] text-zinc-500">
-                    {selectedProposal.status === "Selesai"
-                      ? "Dokumen ini telah Selesai dan terdaftar di Arsip."
-                      : "Pilih Selesai untuk memverifikasi dan memindahkan berkas ke Arsip."}
+                    Ubah lokasi lemari arsip penyimpanan dokumen ini secara instan.
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      handleChangeStatus(selectedProposal.id, "Menunggu", selectedProposal.name);
-                      setSelectedProposal({ ...selectedProposal, status: "Menunggu" });
-                    }}
-                    className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
-                      selectedProposal.status === "Menunggu"
-                        ? "bg-amber-500 text-white shadow-sm"
-                        : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-                    }`}
-                  >
-                    Menunggu
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleChangeStatus(selectedProposal.id, "Selesai", selectedProposal.name);
-                      setSelectedProposal({ ...selectedProposal, status: "Selesai" });
-                    }}
-                    className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
-                      selectedProposal.status === "Selesai"
-                        ? "bg-emerald-600 text-white shadow-sm"
-                        : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-                    }`}
-                  >
-                    Selesai
-                  </button>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {LEMARI_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        handleChangeLemari(selectedProposal.id, opt.id, selectedProposal.name);
+                        setSelectedProposal({ ...selectedProposal, lemariArsip: opt.id });
+                      }}
+                      className={`rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition ${
+                        selectedProposal.lemariArsip === opt.id
+                          ? "bg-red-600 text-white shadow-sm"
+                          : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -676,10 +800,10 @@ export default function HibahTable() {
                   <div className="flex items-center gap-2">
                     <DocumentIcon className="h-4 w-4 text-red-400" />
                     <span className="font-semibold text-xs">
-                      Pratinjau Dokumen Naskah Proposal & RAB
+                      Pratinjau Dokumen Naskah Hibah & Berkas
                     </span>
                     <span className="rounded bg-zinc-700 px-2 py-0.5 text-[10px] text-zinc-300">
-                      {selectedProposal.fileName || "Naskah_Proposal_Resmi.pdf"}
+                      {selectedProposal.fileName || "Naskah_Hibah_Resmi.pdf"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -729,17 +853,17 @@ export default function HibahTable() {
                       {/* Judul Naskah */}
                       <div className="text-center py-2">
                         <p className="font-bold text-xs uppercase underline tracking-wide">
-                          Naskah Pengajuan Usulan Bantuan Hibah Daerah
+                          Arsip Naskah Hibah Daerah
                         </p>
                         <p className="text-[11px] font-sans text-zinc-500 mt-1">
-                          Nomor Registrasi: REG-{selectedProposal.bidangId}-2026/0{selectedProposal.id}
+                          Nomor Registrasi: REG-{selectedProposal.bidangId}-{selectedProposal.tahun || "2026"}/0{selectedProposal.id}
                         </p>
                       </div>
 
                       {/* Isi Naskah */}
                       <div className="space-y-2 text-[11px] leading-relaxed text-zinc-800 font-sans">
                         <p>
-                          Menindaklanjuti permohonan hibah tahun anggaran 2026, bersama ini disampaikan usulan kegiatan sebagai berikut:
+                          Dokumen pengarsipan bantuan hibah daerah tercatat pada basis data pengarsipan Bakesbangpol:
                         </p>
                         <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-200 space-y-1 my-2">
                           <p><strong>Nama Usulan:</strong> {selectedProposal.name}</p>
@@ -747,10 +871,11 @@ export default function HibahTable() {
                           <p><strong>Bidang Pengampu:</strong> {bidangInfo[selectedProposal.bidangId].fullName}</p>
                           <p><strong>Kategori Kegiatan:</strong> {selectedProposal.kategori}</p>
                           <p><strong>Besaran Usulan:</strong> {formatRupiah(selectedProposal.nominal)}</p>
-                          <p><strong>Status Berkas:</strong> <span className={selectedProposal.status === "Selesai" ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>{selectedProposal.status === "Selesai" ? "Disetujui & Diterima (Tervalidasi)" : "Dalam Tahap Evaluasi & Verifikasi Administrasi"}</span></p>
+                          <p><strong>Penempatan Lemari Arsip:</strong> <span className="text-red-700 font-bold">{selectedProposal.lemariArsip}</span></p>
+                          <p><strong>Status Retensi:</strong> {isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal) ? "Arsip Retensi (> 5 Tahun)" : "Arsip Aktif (≤ 5 Tahun)"}</p>
                         </div>
                         <p className="text-zinc-600 text-[10px] italic">
-                          Dokumen ini telah diunggah dan terdaftar secara sah ke dalam Sistem Pengarsipan Hibah Digital Bakesbangpol Kota Bandung.
+                          Dokumen ini telah diarsipkan dan tersimpan secara sah ke dalam Sistem Pengarsipan Hibah Digital Bakesbangpol Kota Bandung.
                         </p>
                       </div>
 
@@ -762,12 +887,12 @@ export default function HibahTable() {
                           <p className="text-zinc-400">Ketua / Penanggung Jawab</p>
                         </div>
                         <div className="text-center">
-                          <p>Verifikator Bakesbangpol,</p>
+                          <p>Petugas Pengarsip Bakesbangpol,</p>
                           <div className="my-1 inline-block rounded border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
-                            {selectedProposal.status === "Selesai" ? "TERVERIFIKASI DIGITAL" : "DALAM PROSES"}
+                            TERARSIP DIGITAL & FISIK
                           </div>
-                          <p className="mt-4 font-bold underline">Tim Evaluasi Bidang {selectedProposal.bidangId}</p>
-                          <p className="text-zinc-400">NIP. 19850412 201001 1 008</p>
+                          <p className="mt-4 font-bold underline">{selectedProposal.lemariArsip}</p>
+                          <p className="text-zinc-400">Ruang Arsip Bakesbangpol</p>
                         </div>
                       </div>
                     </div>
@@ -789,7 +914,7 @@ export default function HibahTable() {
 
               <button
                 type="button"
-                onClick={() => setSelectedProposal(null)}
+                onClick={() => { setSelectedProposal(null); setIsEditing(false); }}
                 className="rounded-xl bg-zinc-900 px-5 py-2 text-xs font-bold text-white hover:bg-zinc-800"
               >
                 Tutup
