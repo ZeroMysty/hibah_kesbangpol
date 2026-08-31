@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
+import CloudflareGate from "@/components/cloudflare-gate";
 import { useMode, accounts } from "@/context/mode-context";
 import {
   EyeIcon,
@@ -9,17 +11,9 @@ import {
   InfoIcon,
   LockIcon,
   MailIcon,
-  RefreshIcon,
   ShieldIcon,
   XIcon,
 } from "./icons";
-
-const captchaChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const generateCaptcha = () =>
-  Array.from(
-    { length: 5 },
-    () => captchaChars[Math.floor(Math.random() * captchaChars.length)],
-  ).join("");
 
 export default function LoginForm() {
   const router = useRouter();
@@ -28,8 +22,6 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [captcha, setCaptcha] = useState(generateCaptcha);
-  const [captchaInput, setCaptchaInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showVerify, setShowVerify] = useState(false);
@@ -38,45 +30,26 @@ export default function LoginForm() {
   const [verifying, setVerifying] = useState(false);
   const [remember, setRemember] = useState(false);
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
+  // Efek khusus untuk nge-render Turnstile secara paksa begitu elemen div-nya siap di DOM
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const w = canvas.width;
-    const h = canvas.height;
+    const timer = setInterval(() => {
+      if ((window as any).turnstile) {
+        const container = document.getElementById("login-turnstile-container");
+        if (container && container.innerHTML === "") {
+          (window as any).turnstile.render("#login-turnstile-container", {
+            sitekey: "0x4AAAAAAEimNNtd-Ih_m4ql",
+            callback: (token: string) => {
+              (window as any).loginCfToken = token;
+              setError("");
+            },
+          });
+          clearInterval(timer);
+        }
+      }
+    }, 200);
 
-    ctx.fillStyle = "#fef2f2";
-    ctx.fillRect(0, 0, w, h);
-
-    for (let i = 0; i < 5; i++) {
-      ctx.strokeStyle = `rgba(185, 28, 28, ${0.12 + Math.random() * 0.2})`;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(Math.random() * w, Math.random() * h);
-      ctx.lineTo(Math.random() * w, Math.random() * h);
-      ctx.stroke();
-    }
-
-    ctx.font = "bold 20px 'Courier New', monospace";
-    ctx.fillStyle = "#991b1b";
-    for (let i = 0; i < captcha.length; i++) {
-      ctx.save();
-      ctx.translate(14 + i * 22, 28);
-      ctx.rotate((Math.random() - 0.5) * 0.5);
-      ctx.fillText(captcha[i], 0, 0);
-      ctx.restore();
-    }
-
-    for (let i = 0; i < 20; i++) {
-      ctx.fillStyle = `rgba(153, 27, 27, ${0.1 + Math.random() * 0.2})`;
-      ctx.beginPath();
-      ctx.arc(Math.random() * w, Math.random() * h, 1.2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }, [captcha]);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,8 +63,10 @@ export default function LoginForm() {
       setError("Kata sandi wajib diisi.");
       return;
     }
-    if (captchaInput.trim().toUpperCase() !== captcha && captchaInput.trim() !== "") {
-      setError("Kode captcha tidak sesuai. Silakan coba lagi.");
+    
+    // Cek token dari variabel global
+    if (!(window as any).loginCfToken) {
+      setError("Selesaikan verifikasi keamanan (Cloudflare) terlebih dahulu.");
       return;
     }
 
@@ -118,12 +93,18 @@ export default function LoginForm() {
   };
 
   const inputClass =
-    "w-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-500/10";
+    "w-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 text-sm font-poppins text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-500/10";
 
   return (
-    <>
+    <CloudflareGate>
+      {/* Script wajib Cloudflare */}
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        strategy="lazyOnload"
+      />
+
       {/* Header */}
-      <div className="mb-7">
+      <div className="mb-7 font-poppins">
         <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
           Selamat Datang
         </h2>
@@ -132,7 +113,7 @@ export default function LoginForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 font-poppins">
         {/* Email */}
         <div>
           <label htmlFor="email" className="mb-1.5 block text-xs font-semibold text-zinc-700">
@@ -181,37 +162,6 @@ export default function LoginForm() {
           </div>
         </div>
 
-        {/* Captcha */}
-        <div>
-          <label htmlFor="captcha" className="mb-1.5 block text-xs font-semibold text-zinc-700">
-            Kode Keamanan
-          </label>
-          <div className="flex items-stretch gap-2.5">
-            <div className="shrink-0 overflow-hidden rounded-xl border border-zinc-200 shadow-inner">
-              <canvas ref={canvasRef} width={120} height={46} aria-hidden="true" />
-            </div>
-            <input
-              id="captcha"
-              type="text"
-              autoComplete="off"
-              maxLength={5}
-              placeholder="Ketik kode di samping"
-              value={captchaInput}
-              onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-3.5 py-3 text-center text-sm font-mono font-bold uppercase tracking-widest text-zinc-800 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-500/10"
-              disabled={loading}
-            />
-            <button
-              type="button"
-              onClick={() => { setCaptcha(generateCaptcha()); setCaptchaInput(""); }}
-              className="flex w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50/60 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-              title="Muat ulang captcha"
-            >
-              <RefreshIcon className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
         {/* Remember & Forgot */}
         <div className="flex items-center justify-between">
           <label className="flex cursor-pointer select-none items-center gap-2 text-xs font-medium text-zinc-600">
@@ -227,6 +177,12 @@ export default function LoginForm() {
             Lupa Password?
           </span>
         </div>
+
+        {/* --- WIDGET CLOUDFLARE TURNSTILE (Target ID) --- */}
+        <div className="flex justify-center py-2">
+          <div id="login-turnstile-container"></div>
+        </div>
+        {/* ---------------------------------------------- */}
 
         {/* Error */}
         {error && (
@@ -265,7 +221,7 @@ export default function LoginForm() {
       {/* Modal 2FA */}
       {showVerify && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm font-poppins"
           role="dialog"
           aria-modal="true"
         >
@@ -324,6 +280,6 @@ export default function LoginForm() {
           </div>
         </div>
       )}
-    </>
+    </CloudflareGate>
   );
 }
