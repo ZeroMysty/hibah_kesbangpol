@@ -7,8 +7,9 @@ import {
   ProposalItem,
   LemariArsip,
   LEMARI_OPTIONS,
+  RAK_OPTIONS,
 } from "@/context/hibah-context";
-import StatusBadge, { RetentionBadge } from "./status-badge";
+import StatusBadge, { RetentionBadge, LokasiArsipBadge } from "./status-badge";
 import {
   ArchiveIcon,
   CheckCircleIcon,
@@ -40,7 +41,7 @@ export default function HibahTable() {
     proposals,
     addProposal,
     updateProposal,
-    updateProposalLemari,
+    updateProposalLokasi,
     deleteProposal,
     isOlderThan5Years,
   } = useHibah();
@@ -58,6 +59,9 @@ export default function HibahTable() {
   const [editInstansi, setEditInstansi] = useState("");
   const [editKategori, setEditKategori] = useState("");
   const [editNominal, setEditNominal] = useState("");
+  const [editLemari, setEditLemari] = useState<LemariArsip>("Lemari Arsip 01");
+  const [editRak, setEditRak] = useState("Rak 01");
+  const [editNomor, setEditNomor] = useState("No. 01");
   const [editPic, setEditPic] = useState("");
   const [editNoTelp, setEditNoTelp] = useState("");
   const [editCatatan, setEditCatatan] = useState("");
@@ -73,6 +77,8 @@ export default function HibahTable() {
       ? (`Lemari Arsip 0${bidangId}` as LemariArsip)
       : "Lemari Arsip 01"
   );
+  const [newRak, setNewRak] = useState("Rak 01");
+  const [newNomor, setNewNomor] = useState("No. 01");
   const [newKategori, setNewKategori] = useState("Seni Budaya");
   const [newNominal, setNewNominal] = useState("");
   const [newPic, setNewPic] = useState("");
@@ -129,6 +135,8 @@ export default function HibahTable() {
       instansi: newInstansi,
       bidangId: newBidangId,
       lemariArsip: newLemari,
+      rakArsip: newRak,
+      nomorArsip: newNomor,
       kategori: newKategori,
       nominal: numericNominal,
       pic: newPic,
@@ -147,16 +155,18 @@ export default function HibahTable() {
     setNewNoTelp("");
     setNewFile(null);
 
-    showToast(`Dokumen usulan hibah berhasil diarsipkan ke ${newLemari}!`);
+    showToast(`Dokumen usulan hibah berhasil diarsipkan ke ${newLemari}, ${newRak}, ${newNomor}!`);
   };
 
-  const handleChangeLemari = (
+  const handleChangeLokasi = (
     id: number,
     targetLemari: LemariArsip,
+    targetRak: string,
+    targetNomor: string,
     proposalName: string
   ) => {
-    updateProposalLemari(id, targetLemari);
-    showToast(`Dokumen "${proposalName}" telah dipindahkan ke ${targetLemari}.`);
+    updateProposalLokasi(id, targetLemari, targetRak, targetNomor);
+    showToast(`Lokasi arsip "${proposalName}" diperbarui: ${targetLemari} • ${targetRak} • ${targetNomor}.`);
   };
 
   return (
@@ -275,7 +285,7 @@ export default function HibahTable() {
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Tujuan Bidang</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Kategori</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Nominal Diajukan</th>
-                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Lemari Arsip</th>
+                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Lokasi Fisik Arsip</th>
                 <th className="px-5 py-3.5 text-left font-semibold whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
@@ -319,30 +329,14 @@ export default function HibahTable() {
                       {formatRupiah(p.nominal)}
                     </td>
 
-                    {/* Spreadsheet-like Lemari Arsip Selector */}
+                    {/* Lokasi Fisik Arsip */}
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <div className="relative inline-flex items-center">
-                        <select
-                          value={p.lemariArsip}
-                          onChange={(e) =>
-                            handleChangeLemari(
-                              p.id,
-                              e.target.value as LemariArsip,
-                              p.name
-                            )
-                          }
-                          className="cursor-pointer appearance-none rounded-full py-1.5 pl-3.5 pr-7 text-xs font-bold ring-1 ring-inset outline-none transition-all shadow-sm bg-white hover:bg-zinc-50 whitespace-nowrap shrink-0"
-                          title="Klik untuk memindahkan ke Lemari Arsip lain"
-                        >
-                          {LEMARI_OPTIONS.map((opt) => (
-                            <option key={opt.id} value={opt.id}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                        {/* Down arrow */}
-                        <ChevronDownIcon className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-zinc-500" />
-                      </div>
+                      <LokasiArsipBadge
+                        lemari={p.lemariArsip}
+                        rak={p.rakArsip || "Rak 01"}
+                        nomor={p.nomorArsip || "No. 01"}
+                        compact={true}
+                      />
                     </td>
 
                     {/* Aksi */}
@@ -360,12 +354,12 @@ export default function HibahTable() {
                         {mode === "admin" && (
                           <button
                             onClick={() => {
-                              if (confirm(`Yakin ingin menghapus dokumen "${p.name}"?`)) {
+                              if (confirm(`Yakin ingin menghapus berkas usulan "${p.name}"?`)) {
                                 deleteProposal(p.id);
-                                showToast(`Dokumen "${p.name}" telah dihapus.`);
+                                showToast(`Berkas "${p.name}" berhasil dihapus.`);
                               }
                             }}
-                            className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"
                             title="Hapus Usulan"
                           >
                             <TrashIcon className="h-4 w-4" />
@@ -379,8 +373,8 @@ export default function HibahTable() {
 
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-16 text-center text-sm text-zinc-400">
-                    Tidak ada usulan hibah yang cocok dengan kriteria filter.
+                  <td colSpan={7} className="px-5 py-12 text-center text-xs text-zinc-400">
+                    Tidak ada data usulan hibah yang sesuai kriteria pencarian.
                   </td>
                 </tr>
               )}
@@ -388,54 +382,49 @@ export default function HibahTable() {
           </table>
         </div>
 
-        {/* Footer info */}
-        <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-5 py-3.5 text-xs text-zinc-500">
-          <p>
-            Menampilkan <strong className="font-semibold text-zinc-900">{filtered.length}</strong> data usulan hibah aktif
-            <span className="text-zinc-400 ml-1">(5 tahun terakhir)</span>
-          </p>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-500">
-              Penyimpanan: 5 Lemari Arsip Aktif
-            </span>
-          </div>
+        {/* Footer Summary */}
+        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-5 py-3 text-xs text-zinc-500 gap-2">
+          <span>
+            Menampilkan <strong>{filtered.length}</strong> dari <strong>{proposals.length}</strong> usulan aktif (&le; 5 tahun)
+          </span>
+          <span className="text-[11px] font-medium text-zinc-400">
+            Penyimpanan: 5 Lemari Arsip Aktif (Tersusun per Lemari, Rak, & Nomor Berkas)
+          </span>
         </div>
       </div>
 
-      {/* Modal Form Tambah Usulan Hibah Baru */}
+      {/* ========================================================================= */}
+      {/* Modal: Tambah Usulan Hibah */}
+      {/* ========================================================================= */}
       {showAddModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm overflow-y-auto"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-2xl rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-2xl my-8">
-            <div className="flex items-start justify-between border-b border-zinc-100 pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
               <div>
-                <h3 className="text-xl font-bold text-zinc-900">
+                <h3 className="text-lg font-bold text-zinc-900">
                   Formulir Pengarsipan Hibah Baru
                 </h3>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Input data usulan hibah dan tentukan Lemari Arsip penyimpanan berkas fisik & digital.
+                <p className="text-xs text-zinc-500">
+                  Input data usulan hibah dan tentukan Lemari, Rak, serta Nomor penyimpanan berkas fisik & digital.
                 </p>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition"
+                className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
               >
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddProposal} className="mt-5 space-y-4">
+            <form onSubmit={handleAddProposal} className="space-y-4">
               <div>
                 <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Nama Kegiatan / Usulan Hibah *
+                  Nama Program / Usulan Kegiatan Hibah *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Misal: Festival Seni Budaya Sunda & Karawitan 2026"
+                  placeholder="Misal: Pelatihan Kader Bela Negara & Wasbang 2026"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
@@ -445,7 +434,7 @@ export default function HibahTable() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Lembaga / Ormas Pemohon *
+                    Lembaga / Organisasi Pemohon *
                   </label>
                   <input
                     type="text"
@@ -456,7 +445,6 @@ export default function HibahTable() {
                     className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
                   />
                 </div>
-
                 <div>
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
                     Nominal Dana Diajukan (Rp) *
@@ -472,43 +460,81 @@ export default function HibahTable() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Tujuan Bidang Teknis *
-                  </label>
-                  <select
-                    value={newBidangId}
-                    onChange={(e) => {
-                      const id = Number(e.target.value) as BidangId;
-                      setNewBidangId(id);
-                      setNewLemari(`Lemari Arsip 0${id}` as LemariArsip);
-                    }}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
-                  >
-                    {([1, 2, 3, 4] as BidangId[]).map((id) => (
-                      <option key={id} value={id}>
-                        {bidangInfo[id].shortName} ({bidangInfo[id].fullName})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-zinc-700">
+                  Tujuan Bidang Teknis *
+                </label>
+                <select
+                  value={newBidangId}
+                  onChange={(e) => {
+                    const id = Number(e.target.value) as BidangId;
+                    setNewBidangId(id);
+                    setNewLemari(`Lemari Arsip 0${id}` as LemariArsip);
+                  }}
+                  className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
+                >
+                  {([1, 2, 3, 4] as BidangId[]).map((id) => (
+                    <option key={id} value={id}>
+                      {bidangInfo[id].shortName} ({bidangInfo[id].fullName})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Penempatan Lemari Arsip *
-                  </label>
-                  <select
-                    value={newLemari}
-                    onChange={(e) => setNewLemari(e.target.value as LemariArsip)}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-bold text-zinc-800 outline-none focus:border-red-400 bg-zinc-50"
-                  >
-                    {LEMARI_OPTIONS.map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.label} - {opt.desc}
-                      </option>
-                    ))}
-                  </select>
+              {/* Lokasi Fisik Penyimpanan: Lemari, Rak, Nomor */}
+              <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <ArchiveIcon className="h-4 w-4 text-red-600" />
+                  <p className="text-xs font-bold text-zinc-900">Alokasi Lokasi Fisik Penyimpanan Arsip</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                      1. Lemari Arsip *
+                    </label>
+                    <select
+                      value={newLemari}
+                      onChange={(e) => setNewLemari(e.target.value as LemariArsip)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                    >
+                      {LEMARI_OPTIONS.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                      2. Posisi Rak *
+                    </label>
+                    <select
+                      value={newRak}
+                      onChange={(e) => setNewRak(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                    >
+                      {RAK_OPTIONS.map((rak) => (
+                        <option key={rak} value={rak}>
+                          {rak}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                      3. Nomor Berkas / Urut *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Misal: No. 05"
+                      value={newNomor}
+                      onChange={(e) => setNewNomor(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono text-zinc-900 outline-none focus:border-red-400"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -588,7 +614,7 @@ export default function HibahTable() {
               {/* Status & Storage Notice */}
               <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3 text-xs text-zinc-700 flex items-center gap-2">
                 <ArchiveIcon className="h-4 w-4 shrink-0 text-red-600" />
-                <span>Dokumen akan tersimpan di <strong>{newLemari}</strong> dan terintegrasi otomatis ke sistem arsip digital.</span>
+                <span>Dokumen akan tersimpan di <strong>{newLemari} &bull; {newRak} &bull; {newNomor}</strong> dan terintegrasi otomatis ke sistem arsip digital.</span>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
@@ -604,7 +630,7 @@ export default function HibahTable() {
                   disabled={isSubmitting}
                   className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98] disabled:opacity-50"
                 >
-                  {isSubmitting ? "Menyimpan Berkas..." : "Simpan & Masukkan ke Lemari Arsip"}
+                  {isSubmitting ? "Menyimpan & Mengarsipkan..." : "Simpan & Arsipkan Berkas"}
                 </button>
               </div>
             </form>
@@ -612,31 +638,25 @@ export default function HibahTable() {
         </div>
       )}
 
-      {/* Modal Detail Usulan Hibah + Inline Document Viewer */}
+      {/* ========================================================================= */}
+      {/* Modal: Detail Dokumen & Berkas */}
+      {/* ========================================================================= */}
       {selectedProposal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm overflow-y-auto"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-4xl rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-2xl my-6 max-h-[92vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white p-6 shadow-2xl">
             {/* Header */}
             <div className="flex items-start justify-between border-b border-zinc-100 pb-4 shrink-0">
               <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold text-white ${
-                      bidangInfo[selectedProposal.bidangId].color
-                    }`}
-                  >
-                    Bidang {selectedProposal.bidangId}
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white ${bidangInfo[selectedProposal.bidangId].color}`}>
+                    Bidang {selectedProposal.bidangId} - {bidangInfo[selectedProposal.bidangId].shortName}
                   </span>
-                  <span className="text-xs text-zinc-400">• {selectedProposal.kategori}</span>
-                  {isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal) && (
-                    <RetentionBadge isOlder={true} />
-                  )}
+                  <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600">
+                    {selectedProposal.kategori}
+                  </span>
+                  <RetentionBadge isOlder={isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal)} />
                 </div>
-                <h4 className="text-lg font-bold text-zinc-900">
+                <h4 className="text-lg font-bold text-zinc-900 line-clamp-1">
                   {selectedProposal.name}
                 </h4>
                 <p className="text-xs text-zinc-500 font-medium">{selectedProposal.instansi}</p>
@@ -650,6 +670,9 @@ export default function HibahTable() {
                       setEditInstansi(selectedProposal.instansi);
                       setEditKategori(selectedProposal.kategori);
                       setEditNominal(selectedProposal.nominal.toString());
+                      setEditLemari(selectedProposal.lemariArsip);
+                      setEditRak(selectedProposal.rakArsip || "Rak 01");
+                      setEditNomor(selectedProposal.nomorArsip || "No. 01");
                       setEditPic(selectedProposal.pic || "");
                       setEditNoTelp(selectedProposal.noTelp || "");
                       setEditCatatan(selectedProposal.catatan || "");
@@ -675,7 +698,7 @@ export default function HibahTable() {
               {/* ---- Edit Panel ---- */}
               {isEditing && (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
-                  <p className="text-xs font-bold text-blue-800 mb-1">Mode Edit — Ubah Data Usulan</p>
+                  <p className="text-xs font-bold text-blue-800 mb-1">Mode Edit — Ubah Data Usulan & Lokasi Lemari</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Nama Usulan</label>
@@ -697,6 +720,49 @@ export default function HibahTable() {
                       <input type="number" value={editNominal} onChange={e => setEditNominal(e.target.value)}
                         className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
                     </div>
+                  </div>
+
+                  {/* Lokasi Fisik Edit */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Lemari Arsip</label>
+                      <select
+                        value={editLemari}
+                        onChange={(e) => setEditLemari(e.target.value as LemariArsip)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400"
+                      >
+                        {LEMARI_OPTIONS.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Posisi Rak</label>
+                      <select
+                        value={editRak}
+                        onChange={(e) => setEditRak(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400"
+                      >
+                        {RAK_OPTIONS.map((rak) => (
+                          <option key={rak} value={rak}>
+                            {rak}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Nomor Berkas / Urut</label>
+                      <input
+                        value={editNomor}
+                        onChange={(e) => setEditNomor(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono outline-none focus:border-blue-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
                       <label className="block text-[11px] font-semibold text-zinc-500 mb-1">PIC / Kontak</label>
                       <input value={editPic} onChange={e => setEditPic(e.target.value)}
@@ -721,6 +787,9 @@ export default function HibahTable() {
                           instansi: editInstansi,
                           kategori: editKategori,
                           nominal: parseFloat(editNominal) || selectedProposal.nominal,
+                          lemariArsip: editLemari,
+                          rakArsip: editRak,
+                          nomorArsip: editNomor,
                           pic: editPic,
                           noTelp: editNoTelp,
                           catatan: editCatatan,
@@ -728,7 +797,7 @@ export default function HibahTable() {
                         updateProposal(selectedProposal.id, updates);
                         setSelectedProposal({ ...selectedProposal, ...updates });
                         setIsEditing(false);
-                        showToast("Data berhasil diperbarui.");
+                        showToast("Data & lokasi penyimpanan berhasil diperbarui.");
                       }}
                       className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition"
                     >
@@ -751,10 +820,13 @@ export default function HibahTable() {
                   <p className="font-bold text-zinc-900 text-sm mt-0.5">{formatRupiah(selectedProposal.nominal)}</p>
                 </div>
                 <div className="rounded-xl bg-zinc-50 p-3 border border-zinc-100">
-                  <span className="text-zinc-400 block text-[11px]">Lokasi Lemari Arsip</span>
-                  <div className="mt-1">
-                    <StatusBadge status={selectedProposal.lemariArsip} />
-                  </div>
+                  <span className="text-zinc-400 block text-[11px] mb-1">Lokasi Fisik Arsip</span>
+                  <LokasiArsipBadge
+                    lemari={selectedProposal.lemariArsip}
+                    rak={selectedProposal.rakArsip || "Rak 01"}
+                    nomor={selectedProposal.nomorArsip || "No. 01"}
+                    compact={true}
+                  />
                 </div>
                 <div className="rounded-xl bg-zinc-50 p-3 border border-zinc-100">
                   <span className="text-zinc-400 block text-[11px]">Tahun / Tgl Masuk</span>
@@ -766,31 +838,90 @@ export default function HibahTable() {
                 </div>
               </div>
 
-              {/* Quick Lemari Switcher Inside Detail */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl border border-zinc-200 bg-zinc-50/70 p-3.5">
-                <div>
-                  <p className="font-bold text-zinc-900 text-xs">Pindahkan Lokasi Lemari Arsip</p>
-                  <p className="text-[11px] text-zinc-500">
-                    Ubah lokasi lemari arsip penyimpanan dokumen ini secara instan.
-                  </p>
+              {/* Quick Lemari & Rak Switcher Inside Detail */}
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-zinc-900 text-xs">Pindahkan Lokasi Fisik Lemari & Rak</p>
+                    <p className="text-[11px] text-zinc-500">
+                      Ubah lokasi lemari arsip, nomor rak, dan nomor berkas penyimpanan dokumen ini secara instan.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {LEMARI_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => {
-                        handleChangeLemari(selectedProposal.id, opt.id, selectedProposal.name);
-                        setSelectedProposal({ ...selectedProposal, lemariArsip: opt.id });
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <span className="text-[11px] font-bold text-zinc-600 block mb-1">Pilih Lemari:</span>
+                    <select
+                      value={selectedProposal.lemariArsip}
+                      onChange={(e) => {
+                        const newL = e.target.value as LemariArsip;
+                        handleChangeLokasi(
+                          selectedProposal.id,
+                          newL,
+                          selectedProposal.rakArsip || "Rak 01",
+                          selectedProposal.nomorArsip || "No. 01",
+                          selectedProposal.name
+                        );
+                        setSelectedProposal({ ...selectedProposal, lemariArsip: newL });
                       }}
-                      className={`rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition ${
-                        selectedProposal.lemariArsip === opt.id
-                          ? "bg-red-600 text-white shadow-sm"
-                          : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-                      }`}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none shadow-xs"
                     >
-                      {opt.label}
-                    </button>
-                  ))}
+                      {LEMARI_OPTIONS.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-bold text-zinc-600 block mb-1">Pilih Rak:</span>
+                    <select
+                      value={selectedProposal.rakArsip || "Rak 01"}
+                      onChange={(e) => {
+                        const newR = e.target.value;
+                        handleChangeLokasi(
+                          selectedProposal.id,
+                          selectedProposal.lemariArsip,
+                          newR,
+                          selectedProposal.nomorArsip || "No. 01",
+                          selectedProposal.name
+                        );
+                        setSelectedProposal({ ...selectedProposal, rakArsip: newR });
+                      }}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none shadow-xs"
+                    >
+                      {RAK_OPTIONS.map((rak) => (
+                        <option key={rak} value={rak}>
+                          {rak}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-bold text-zinc-600 block mb-1">Nomor Berkas:</span>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        defaultValue={selectedProposal.nomorArsip || "No. 01"}
+                        onBlur={(e) => {
+                          const newN = e.target.value;
+                          handleChangeLokasi(
+                            selectedProposal.id,
+                            selectedProposal.lemariArsip,
+                            selectedProposal.rakArsip || "Rak 01",
+                            newN,
+                            selectedProposal.name
+                          );
+                          setSelectedProposal({ ...selectedProposal, nomorArsip: newN });
+                        }}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono text-zinc-900 outline-none shadow-xs"
+                        placeholder="No. 01"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -871,7 +1002,12 @@ export default function HibahTable() {
                           <p><strong>Bidang Pengampu:</strong> {bidangInfo[selectedProposal.bidangId].fullName}</p>
                           <p><strong>Kategori Kegiatan:</strong> {selectedProposal.kategori}</p>
                           <p><strong>Besaran Usulan:</strong> {formatRupiah(selectedProposal.nominal)}</p>
-                          <p><strong>Penempatan Lemari Arsip:</strong> <span className="text-red-700 font-bold">{selectedProposal.lemariArsip}</span></p>
+                          <p>
+                            <strong>Penempatan Fisik Arsip:</strong>{" "}
+                            <span className="text-red-700 font-bold">
+                              {selectedProposal.lemariArsip} &bull; {selectedProposal.rakArsip || "Rak 01"} &bull; {selectedProposal.nomorArsip || "No. 01"}
+                            </span>
+                          </p>
                           <p><strong>Status Retensi:</strong> {isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal) ? "Arsip Retensi (> 5 Tahun)" : "Arsip Aktif (≤ 5 Tahun)"}</p>
                         </div>
                         <p className="text-zinc-600 text-[10px] italic">
@@ -891,7 +1027,9 @@ export default function HibahTable() {
                           <div className="my-1 inline-block rounded border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
                             TERARSIP DIGITAL & FISIK
                           </div>
-                          <p className="mt-4 font-bold underline">{selectedProposal.lemariArsip}</p>
+                          <p className="mt-4 font-bold underline">
+                            {selectedProposal.lemariArsip} ({selectedProposal.rakArsip || "Rak 01"} - {selectedProposal.nomorArsip || "No. 01"})
+                          </p>
                           <p className="text-zinc-400">Ruang Arsip Bakesbangpol</p>
                         </div>
                       </div>

@@ -49,3 +49,61 @@ export function RetentionBadge({ isOlder }: { isOlder: boolean }) {
     </span>
   );
 }
+
+export function LokasiArsipBadge({
+  lemari,
+  rak = "Rak 01",
+  nomor = "No. 01",
+  compact = false,
+}: {
+  lemari: string;
+  rak?: string;
+  nomor?: string;
+  compact?: boolean;
+}) {
+  const lemariColor = statusStyles[lemari] ?? "bg-zinc-100 text-zinc-700 ring-zinc-300";
+  
+  // Format kode ringkas: L.01, R.01, #01
+  const lNum = lemari.replace(/[^0-9]/g, "");
+  const lCode = lemari.toLowerCase().includes("khusus")
+    ? "Khusus"
+    : lNum
+    ? `L.${lNum}`
+    : lemari.replace("Lemari Arsip ", "L.");
+
+  const rNum = rak.replace(/[^0-9]/g, "");
+  const rCode = rNum ? `R.${rNum}` : rak;
+
+  const nNum = nomor.replace(/[^0-9]/g, "");
+  const nCode = nNum ? `#${nNum}` : nomor;
+
+  const fullTitle = `${lemari} • ${rak} • ${nomor}`;
+
+  if (compact) {
+    return (
+      <span
+        title={fullTitle}
+        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset whitespace-nowrap shrink-0 ${lemariColor}`}
+      >
+        <span className="font-bold">{lCode}</span>
+        <span className="opacity-30 select-none">•</span>
+        <span className="font-semibold">{rCode}</span>
+        <span className="opacity-30 select-none">•</span>
+        <span className="font-mono font-bold">{nCode}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      title={fullTitle}
+      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset whitespace-nowrap shrink-0 ${lemariColor}`}
+    >
+      <span className="font-bold">{lCode}</span>
+      <span className="opacity-35 select-none">•</span>
+      <span className="font-semibold">{rCode}</span>
+      <span className="opacity-35 select-none">•</span>
+      <span className="font-mono font-bold">{nCode}</span>
+    </span>
+  );
+}

@@ -18,6 +18,14 @@ export const LEMARI_OPTIONS: { id: LemariArsip; label: string; bidangId: BidangI
   { id: "Lemari Arsip Khusus", label: "Lemari Arsip Khusus", bidangId: 0, desc: "Arsip Khusus / Gabungan / Cadangan" },
 ];
 
+export const RAK_OPTIONS = [
+  "Rak 01",
+  "Rak 02",
+  "Rak 03",
+  "Rak 04",
+  "Rak 05",
+];
+
 export interface ProposalItem {
   id: number;
   name: string;
@@ -28,6 +36,8 @@ export interface ProposalItem {
   tanggal: string;
   tahun: string;
   lemariArsip: LemariArsip;
+  rakArsip?: string;   // e.g. "Rak 01", "Rak 02", ...
+  nomorArsip?: string; // e.g. "No. 01", "No. 12", ...
   pic?: string;
   noTelp?: string;
   catatan?: string;
@@ -48,6 +58,8 @@ export interface ArsipItem {
   tanggal: string;
   ukuran: string;
   lemariArsip: LemariArsip;
+  rakArsip?: string;   // e.g. "Rak 01", "Rak 02", ...
+  nomorArsip?: string; // e.g. "No. 01", "No. 12", ...
   status?: "Aktif" | "Permanen" | "Inaktif";
   nominal?: number;
   pic?: string;
@@ -60,42 +72,42 @@ export interface ArsipItem {
 
 const initialProposals: ProposalItem[] = [
   // ==================== BIDANG 1: Ideologi, Wawasan Kebangsaan & Bela Negara ====================
-  { id: 101, name: "Pendidikan & Pelatihan Intensif Paskibraka Kota 2026", instansi: "Paskibraka Kota (PPI)", bidangId: 1, kategori: "Pendidikan", nominal: 150000000, tanggal: "10 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", fileName: "NPHD_Paskibraka_2026.pdf", fileSize: "4.8 MB", pic: "Ahmad Fauzi, S.Sos" },
-  { id: 102, name: "Kemah Wawasan Kebangsaan & Bela Negara Pramuka", instansi: "Kwartir Cabang Gerakan Pramuka", bidangId: 1, kategori: "Pemuda", nominal: 85000000, tanggal: "08 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", fileName: "Proposal_Kemah_Pramuka.pdf", fileSize: "3.2 MB", pic: "Drs. Bambang Suharto" },
-  { id: 103, name: "Sosialisasi & Pemantapan Nilai Pancasila Pelajar", instansi: "SMPN 4 Kota", bidangId: 1, kategori: "Pendidikan", nominal: 45000000, tanggal: "29 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", fileName: "Proposal_Wasbang_SMPN4.pdf", fileSize: "1.8 MB", pic: "Dra. Siti Rahmah" },
-  { id: 104, name: "Dialog Kebangsaan Mahasiswa & Generasi Muda", instansi: "Universitas Negeri", bidangId: 1, kategori: "Pendidikan", nominal: 60000000, tanggal: "27 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", fileName: "Proposal_Dialog_Mahasiswa.pdf", fileSize: "2.7 MB", pic: "Dr. Irwan Setiawan" },
-  { id: 105, name: "Pelatihan Kepemimpinan Resimen Mahasiswa (Menwa)", instansi: "Skomen Mahawarman", bidangId: 1, kategori: "Bela Negara", nominal: 55000000, tanggal: "22 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", fileName: "NPHD_Diklat_Menwa_2026.pdf", fileSize: "3.5 MB", pic: "Mayor (Purn.) Hendra" },
-  { id: 106, name: "Forum Pembauran Kebangsaan (FPK) Antar Etnis", instansi: "Sekretariat FPK Kota", bidangId: 1, kategori: "Kebangsaan", nominal: 70000000, tanggal: "14 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", fileName: "SK_Bantuan_FPK.pdf", fileSize: "2.9 MB", pic: "Drs. H. Maman" },
+  { id: 101, name: "Pendidikan & Pelatihan Intensif Paskibraka Kota 2026", instansi: "Paskibraka Kota (PPI)", bidangId: 1, kategori: "Pendidikan", nominal: 150000000, tanggal: "10 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", rakArsip: "Rak 01", nomorArsip: "No. 01", fileName: "NPHD_Paskibraka_2026.pdf", fileSize: "4.8 MB", pic: "Ahmad Fauzi, S.Sos" },
+  { id: 102, name: "Kemah Wawasan Kebangsaan & Bela Negara Pramuka", instansi: "Kwartir Cabang Gerakan Pramuka", bidangId: 1, kategori: "Pemuda", nominal: 85000000, tanggal: "08 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", rakArsip: "Rak 01", nomorArsip: "No. 02", fileName: "Proposal_Kemah_Pramuka.pdf", fileSize: "3.2 MB", pic: "Drs. Bambang Suharto" },
+  { id: 103, name: "Sosialisasi & Pemantapan Nilai Pancasila Pelajar", instansi: "SMPN 4 Kota", bidangId: 1, kategori: "Pendidikan", nominal: 45000000, tanggal: "29 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", rakArsip: "Rak 02", nomorArsip: "No. 03", fileName: "Proposal_Wasbang_SMPN4.pdf", fileSize: "1.8 MB", pic: "Dra. Siti Rahmah" },
+  { id: 104, name: "Dialog Kebangsaan Mahasiswa & Generasi Muda", instansi: "Universitas Negeri", bidangId: 1, kategori: "Pendidikan", nominal: 60000000, tanggal: "27 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", rakArsip: "Rak 02", nomorArsip: "No. 04", fileName: "Proposal_Dialog_Mahasiswa.pdf", fileSize: "2.7 MB", pic: "Dr. Irwan Setiawan" },
+  { id: 105, name: "Pelatihan Kepemimpinan Resimen Mahasiswa (Menwa)", instansi: "Skomen Mahawarman", bidangId: 1, kategori: "Bela Negara", nominal: 55000000, tanggal: "22 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", rakArsip: "Rak 03", nomorArsip: "No. 05", fileName: "NPHD_Diklat_Menwa_2026.pdf", fileSize: "3.5 MB", pic: "Mayor (Purn.) Hendra" },
+  { id: 106, name: "Forum Pembauran Kebangsaan (FPK) Antar Etnis", instansi: "Sekretariat FPK Kota", bidangId: 1, kategori: "Kebangsaan", nominal: 70000000, tanggal: "14 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 01", rakArsip: "Rak 03", nomorArsip: "No. 06", fileName: "SK_Bantuan_FPK.pdf", fileSize: "2.9 MB", pic: "Drs. H. Maman" },
 
   // ==================== BIDANG 2: Politik Dalam Negeri & Organisasi Kemasyarakatan ====================
-  { id: 201, name: "Revitalisasi Sanggar Budaya & Kreativitas Pemuda", instansi: "Dinas Kebudayaan & Karang Taruna", bidangId: 2, kategori: "Seni Budaya", nominal: 250000000, tanggal: "05 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", fileName: "Proposal_Taman_Budaya_2026.pdf", fileSize: "3.4 MB", pic: "Rizky Pratama, SH" },
-  { id: 202, name: "Pemberdayaan Karang Taruna Berbasis Kelurahan", instansi: "Pengurus Karang Taruna Kota", bidangId: 2, kategori: "Pemuda", nominal: 95000000, tanggal: "03 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", fileName: "Proposal_Pemberdayaan_KT.pdf", fileSize: "2.8 MB", pic: "Yudi Firmansyah" },
-  { id: 203, name: "Pekan Olahraga Pemuda & Pelajar Antar Kecamatan", instansi: "KONI / KNPI Kota", bidangId: 2, kategori: "Pemuda", nominal: 180000000, tanggal: "20 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", fileName: "Proposal_PO_KarangTaruna.pdf", fileSize: "5.0 MB", pic: "Asep Sunandar" },
-  { id: 204, name: "Pendidikan Politik & Demokrasi Pemilih Pemula", instansi: "Yayasan Demokrasi Rakyat", bidangId: 2, kategori: "Politik", nominal: 65000000, tanggal: "18 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", fileName: "NPHD_Pendidikan_Politik.pdf", fileSize: "3.1 MB", pic: "H. Ridwan Kamil, MM" },
-  { id: 205, name: "Fasilitasi Pembinaan Ormas & Lembaga Swadaya", instansi: "Forum Ormas Bersatu", bidangId: 2, kategori: "Ormas", nominal: 80000000, tanggal: "12 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", fileName: "Proposal_Pembinaan_Ormas.pdf", fileSize: "2.4 MB", pic: "Agus Supriatna" },
-  { id: 206, name: "Festival Kebudayaan & Seni Tradisional Pasundan", instansi: "Paguyuban Pasundan", bidangId: 2, kategori: "Seni Budaya", nominal: 200000000, tanggal: "03 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", fileName: "NPHD_Paguyuban_Pasundan.pdf", fileSize: "4.5 MB", pic: "Prof. Dr. Didi Turmudzi" },
+  { id: 201, name: "Revitalisasi Sanggar Budaya & Kreativitas Pemuda", instansi: "Dinas Kebudayaan & Karang Taruna", bidangId: 2, kategori: "Seni Budaya", nominal: 250000000, tanggal: "05 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", rakArsip: "Rak 01", nomorArsip: "No. 01", fileName: "Proposal_Taman_Budaya_2026.pdf", fileSize: "3.4 MB", pic: "Rizky Pratama, SH" },
+  { id: 202, name: "Pemberdayaan Karang Taruna Berbasis Kelurahan", instansi: "Pengurus Karang Taruna Kota", bidangId: 2, kategori: "Pemuda", nominal: 95000000, tanggal: "03 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", rakArsip: "Rak 01", nomorArsip: "No. 02", fileName: "Proposal_Pemberdayaan_KT.pdf", fileSize: "2.8 MB", pic: "Yudi Firmansyah" },
+  { id: 203, name: "Pekan Olahraga Pemuda & Pelajar Antar Kecamatan", instansi: "KONI / KNPI Kota", bidangId: 2, kategori: "Pemuda", nominal: 180000000, tanggal: "20 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", rakArsip: "Rak 02", nomorArsip: "No. 03", fileName: "Proposal_PO_KarangTaruna.pdf", fileSize: "5.0 MB", pic: "Asep Sunandar" },
+  { id: 204, name: "Pendidikan Politik & Demokrasi Pemilih Pemula", instansi: "Yayasan Demokrasi Rakyat", bidangId: 2, kategori: "Politik", nominal: 65000000, tanggal: "18 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", rakArsip: "Rak 02", nomorArsip: "No. 04", fileName: "NPHD_Pendidikan_Politik.pdf", fileSize: "3.1 MB", pic: "H. Ridwan Kamil, MM" },
+  { id: 205, name: "Fasilitasi Pembinaan Ormas & Lembaga Swadaya", instansi: "Forum Ormas Bersatu", bidangId: 2, kategori: "Ormas", nominal: 80000000, tanggal: "12 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", rakArsip: "Rak 03", nomorArsip: "No. 05", fileName: "Proposal_Pembinaan_Ormas.pdf", fileSize: "2.4 MB", pic: "Agus Supriatna" },
+  { id: 206, name: "Festival Kebudayaan & Seni Tradisional Pasundan", instansi: "Paguyuban Pasundan", bidangId: 2, kategori: "Seni Budaya", nominal: 200000000, tanggal: "03 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 02", rakArsip: "Rak 03", nomorArsip: "No. 06", fileName: "NPHD_Paguyuban_Pasundan.pdf", fileSize: "4.5 MB", pic: "Prof. Dr. Didi Turmudzi" },
 
   // ==================== BIDANG 3: Ketahanan Ekonomi, Sosbud & Agama ====================
-  { id: 301, name: "Penguatan Kapasitas Kerukunan Umat Beragama (FKUB)", instansi: "FKUB Kota", bidangId: 3, kategori: "Kerukunan", nominal: 85000000, tanggal: "04 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", fileName: "Proposal_FKUB_Kota_2026.pdf", fileSize: "2.1 MB", pic: "KH. Subhan Makmun" },
-  { id: 302, name: "Festival Kerukunan Lintas Agama & Dialog Toleransi", instansi: "Panitia Bersama FKUB", bidangId: 3, kategori: "Kerukunan", nominal: 120000000, tanggal: "01 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", fileName: "NPHD_Festival_Kerukunan.pdf", fileSize: "4.2 MB", pic: "Pdt. Simon Petrus" },
-  { id: 303, name: "Safari Dakwah & Pembinaan Rohani Kemasyarakatan", instansi: "MUI Kota", bidangId: 3, kategori: "Kerukunan", nominal: 95000000, tanggal: "15 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", fileName: "LPJ_Safari_Ramadhan.pdf", fileSize: "4.6 MB", pic: "Drs. KH. Miftah Faridl" },
-  { id: 304, name: "Bantuan Sarana Forum Komunikasi Antar Umat Kristiani", instansi: "Badan Musyawarah Antar Gereja (BAMAG)", bidangId: 3, kategori: "Kerukunan", nominal: 110000000, tanggal: "08 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", fileName: "Proposal_Forum_Agama.pdf", fileSize: "3.3 MB", pic: "Pdt. Daniel Sudarto" },
-  { id: 305, name: "Pemberdayaan Ekonomi Umat Berbasis Koperasi Masjid", instansi: "Dewan Kemakmuran Masjid Agung", bidangId: 3, kategori: "Ekonomi", nominal: 75000000, tanggal: "06 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", fileName: "NPHD_Ekonomi_Umat.pdf", fileSize: "3.7 MB", pic: "H. Cecep Saepudin" },
-  { id: 306, name: "Fasilitasi Pagelaran Seni Budaya Lintas Agama", instansi: "Dewan Kesenian Kota", bidangId: 3, kategori: "Seni Budaya", nominal: 130000000, tanggal: "02 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", fileName: "Proposal_Seni_LintasAgama.pdf", fileSize: "4.1 MB", pic: "Dedi Rosadi, S.Sn" },
+  { id: 301, name: "Penguatan Kapasitas Kerukunan Umat Beragama (FKUB)", instansi: "FKUB Kota", bidangId: 3, kategori: "Kerukunan", nominal: 85000000, tanggal: "04 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", rakArsip: "Rak 01", nomorArsip: "No. 01", fileName: "Proposal_FKUB_Kota_2026.pdf", fileSize: "2.1 MB", pic: "KH. Subhan Makmun" },
+  { id: 302, name: "Festival Kerukunan Lintas Agama & Dialog Toleransi", instansi: "Panitia Bersama FKUB", bidangId: 3, kategori: "Kerukunan", nominal: 120000000, tanggal: "01 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", rakArsip: "Rak 01", nomorArsip: "No. 02", fileName: "NPHD_Festival_Kerukunan.pdf", fileSize: "4.2 MB", pic: "Pdt. Simon Petrus" },
+  { id: 303, name: "Safari Dakwah & Pembinaan Rohani Kemasyarakatan", instansi: "MUI Kota", bidangId: 3, kategori: "Kerukunan", nominal: 95000000, tanggal: "15 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", rakArsip: "Rak 02", nomorArsip: "No. 03", fileName: "LPJ_Safari_Ramadhan.pdf", fileSize: "4.6 MB", pic: "Drs. KH. Miftah Faridl" },
+  { id: 304, name: "Bantuan Sarana Forum Komunikasi Antar Umat Kristiani", instansi: "Badan Musyawarah Antar Gereja (BAMAG)", bidangId: 3, kategori: "Kerukunan", nominal: 110000000, tanggal: "08 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", rakArsip: "Rak 02", nomorArsip: "No. 04", fileName: "Proposal_Forum_Agama.pdf", fileSize: "3.3 MB", pic: "Pdt. Daniel Sudarto" },
+  { id: 305, name: "Pemberdayaan Ekonomi Umat Berbasis Koperasi Masjid", instansi: "Dewan Kemakmuran Masjid Agung", bidangId: 3, kategori: "Ekonomi", nominal: 75000000, tanggal: "06 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", rakArsip: "Rak 03", nomorArsip: "No. 05", fileName: "NPHD_Ekonomi_Umat.pdf", fileSize: "3.7 MB", pic: "H. Cecep Saepudin" },
+  { id: 306, name: "Fasilitasi Pagelaran Seni Budaya Lintas Agama", instansi: "Dewan Kesenian Kota", bidangId: 3, kategori: "Seni Budaya", nominal: 130000000, tanggal: "02 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 03", rakArsip: "Rak 03", nomorArsip: "No. 06", fileName: "Proposal_Seni_LintasAgama.pdf", fileSize: "4.1 MB", pic: "Dedi Rosadi, S.Sn" },
 
   // ==================== BIDANG 4: Kewaspadaan Nasional & Konflik Sosial ====================
-  { id: 401, name: "Pelatihan Deteksi Dini & Early Warning System (FKDM)", instansi: "Forum Kewaspadaan Dini Masyarakat", bidangId: 4, kategori: "Kawasan", nominal: 95000000, tanggal: "07 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", fileName: "NPHD_FKDM_DeteksiDini.pdf", fileSize: "3.8 MB", pic: "Kolonel (Purn.) Agus Salim" },
-  { id: 402, name: "Penyuluhan Pencegahan Narkoba & Ketahanan Wilayah", instansi: "BNNK / Relawan Wasnas", bidangId: 4, kategori: "Kawasan", nominal: 75000000, tanggal: "24 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", fileName: "Dokumen_Wasnas_BNNK.pdf", fileSize: "3.1 MB", pic: "AKBP (Purn.) Budiman" },
-  { id: 403, name: "Sosialisasi Pencegahan Ekstremisme & Radikalisme", instansi: "Komunitas Kewaspadaan Generasi", bidangId: 4, kategori: "Kawasan", nominal: 65000000, tanggal: "19 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", fileName: "Proposal_Cegah_Radikalisme.pdf", fileSize: "2.6 MB", pic: "Dr. Hendra Wijaya" },
-  { id: 404, name: "Pengawasan Orang Asing & Pemantauan Perbatasan Kota", instansi: "Satgas Pengawasan Orang Asing", bidangId: 4, kategori: "Kawasan", nominal: 110000000, tanggal: "11 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", fileName: "Proposal_Pengawasan_Asing.pdf", fileSize: "3.9 MB", pic: "Drs. Eko Prasetyo" },
-  { id: 405, name: "Simulasi Mediasi & Penanganan Potensi Konflik Sosial", instansi: "Lembaga Advokasi Damai", bidangId: 4, kategori: "Kawasan", nominal: 80000000, tanggal: "05 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", fileName: "NPHD_Simulasi_Konflik.pdf", fileSize: "3.3 MB", pic: "Nurul Hidayat, SH" },
-  { id: 406, name: "Pembinaan Satuan Relawan Tanggap Konflik Sosial", instansi: "Relawan Wasnas Jawa Barat", bidangId: 4, kategori: "Kawasan", nominal: 50000000, tanggal: "28 Jun 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", fileName: "Proposal_Relawan_Wasnas.pdf", fileSize: "2.2 MB", pic: "Deden Suryana" },
+  { id: 401, name: "Pelatihan Deteksi Dini & Early Warning System (FKDM)", instansi: "Forum Kewaspadaan Dini Masyarakat", bidangId: 4, kategori: "Kawasan", nominal: 95000000, tanggal: "07 Agu 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", rakArsip: "Rak 01", nomorArsip: "No. 01", fileName: "NPHD_FKDM_DeteksiDini.pdf", fileSize: "3.8 MB", pic: "Kolonel (Purn.) Agus Salim" },
+  { id: 402, name: "Penyuluhan Pencegahan Narkoba & Ketahanan Wilayah", instansi: "BNNK / Relawan Wasnas", bidangId: 4, kategori: "Kawasan", nominal: 75000000, tanggal: "24 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", rakArsip: "Rak 01", nomorArsip: "No. 02", fileName: "Dokumen_Wasnas_BNNK.pdf", fileSize: "3.1 MB", pic: "AKBP (Purn.) Budiman" },
+  { id: 403, name: "Sosialisasi Pencegahan Ekstremisme & Radikalisme", instansi: "Komunitas Kewaspadaan Generasi", bidangId: 4, kategori: "Kawasan", nominal: 65000000, tanggal: "19 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", rakArsip: "Rak 02", nomorArsip: "No. 03", fileName: "Proposal_Cegah_Radikalisme.pdf", fileSize: "2.6 MB", pic: "Dr. Hendra Wijaya" },
+  { id: 404, name: "Pengawasan Orang Asing & Pemantauan Perbatasan Kota", instansi: "Satgas Pengawasan Orang Asing", bidangId: 4, kategori: "Kawasan", nominal: 110000000, tanggal: "11 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", rakArsip: "Rak 02", nomorArsip: "No. 04", fileName: "Proposal_Pengawasan_Asing.pdf", fileSize: "3.9 MB", pic: "Drs. Eko Prasetyo" },
+  { id: 405, name: "Simulasi Mediasi & Penanganan Potensi Konflik Sosial", instansi: "Lembaga Advokasi Damai", bidangId: 4, kategori: "Kawasan", nominal: 80000000, tanggal: "05 Jul 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", rakArsip: "Rak 03", nomorArsip: "No. 05", fileName: "NPHD_Simulasi_Konflik.pdf", fileSize: "3.3 MB", pic: "Nurul Hidayat, SH" },
+  { id: 406, name: "Pembinaan Satuan Relawan Tanggap Konflik Sosial", instansi: "Relawan Wasnas Jawa Barat", bidangId: 4, kategori: "Kawasan", nominal: 50000000, tanggal: "28 Jun 2026", tahun: "2026", lemariArsip: "Lemari Arsip 04", rakArsip: "Rak 03", nomorArsip: "No. 06", fileName: "Proposal_Relawan_Wasnas.pdf", fileSize: "2.2 MB", pic: "Deden Suryana" },
 
   // ==================== DOKUMEN HISTORIS (> 5 TAHUN / RETENSI LAMA) ====================
-  { id: 501, name: "Bimbingan Teknis Wasbang & Bela Negara Pelajar 2020", instansi: "Forum Pendidik Karakter Bangsa", bidangId: 1, kategori: "Pendidikan", nominal: 40000000, tanggal: "12 Okt 2020", tahun: "2020", lemariArsip: "Lemari Arsip 01", fileName: "Dokumen_Wasbang_2020.pdf", fileSize: "3.0 MB", pic: "H. Sugeng, M.Pd" },
-  { id: 502, name: "Fasilitasi Pendidikan Politik Pemilu Daerah 2019", instansi: "Lembaga Demokrasi Nusantara", bidangId: 2, kategori: "Politik", nominal: 75000000, tanggal: "15 Apr 2019", tahun: "2019", lemariArsip: "Lemari Arsip 02", fileName: "LPJ_Pendidikan_Politik_2019.pdf", fileSize: "4.1 MB", pic: "Dedi Suhendar" },
-  { id: 503, name: "Bantuan Sarana Kerukunan Umat Beragama 2018", instansi: "Sekretariat FKUB Kota", bidangId: 3, kategori: "Kerukunan", nominal: 60000000, tanggal: "20 Agu 2018", tahun: "2018", lemariArsip: "Lemari Arsip 03", fileName: "SK_FKUB_2018.pdf", fileSize: "2.8 MB", pic: "Drs. H. Miftah" },
-  { id: 504, name: "Deteksi Dini & Pencegahan Kerawanan Sosial 2020", instansi: "FKDM Kota", bidangId: 4, kategori: "Kawasan", nominal: 50000000, tanggal: "05 Des 2020", tahun: "2020", lemariArsip: "Lemari Arsip 04", fileName: "Dokumen_FKDM_2020.pdf", fileSize: "3.2 MB", pic: "Mayor Suwandi" },
+  { id: 501, name: "Bimbingan Teknis Wasbang & Bela Negara Pelajar 2020", instansi: "Forum Pendidik Karakter Bangsa", bidangId: 1, kategori: "Pendidikan", nominal: 40000000, tanggal: "12 Okt 2020", tahun: "2020", lemariArsip: "Lemari Arsip 01", rakArsip: "Rak 05", nomorArsip: "No. 51", fileName: "Dokumen_Wasbang_2020.pdf", fileSize: "3.0 MB", pic: "H. Sugeng, M.Pd" },
+  { id: 502, name: "Fasilitasi Pendidikan Politik Pemilu Daerah 2019", instansi: "Lembaga Demokrasi Nusantara", bidangId: 2, kategori: "Politik", nominal: 75000000, tanggal: "15 Apr 2019", tahun: "2019", lemariArsip: "Lemari Arsip 02", rakArsip: "Rak 05", nomorArsip: "No. 52", fileName: "LPJ_Pendidikan_Politik_2019.pdf", fileSize: "4.1 MB", pic: "Dedi Suhendar" },
+  { id: 503, name: "Bantuan Sarana Kerukunan Umat Beragama 2018", instansi: "Sekretariat FKUB Kota", bidangId: 3, kategori: "Kerukunan", nominal: 60000000, tanggal: "20 Agu 2018", tahun: "2018", lemariArsip: "Lemari Arsip 03", rakArsip: "Rak 05", nomorArsip: "No. 53", fileName: "SK_FKUB_2018.pdf", fileSize: "2.8 MB", pic: "Drs. H. Miftah" },
+  { id: 504, name: "Deteksi Dini & Pencegahan Kerawanan Sosial 2020", instansi: "FKDM Kota", bidangId: 4, kategori: "Kawasan", nominal: 50000000, tanggal: "05 Des 2020", tahun: "2020", lemariArsip: "Lemari Arsip 04", rakArsip: "Rak 05", nomorArsip: "No. 54", fileName: "Dokumen_FKDM_2020.pdf", fileSize: "3.2 MB", pic: "Mayor Suwandi" },
 ];
 
 const initialArsip: ArsipItem[] = [
@@ -111,6 +123,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "10 Agu 2026",
     ukuran: "4.8 MB",
     lemariArsip: "Lemari Arsip 01",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 01",
     fileName: "NPHD_Paskibraka_2026_TTE.pdf",
     nominal: 150000000,
   },
@@ -125,6 +139,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "02 Agu 2026",
     ukuran: "9.4 MB",
     lemariArsip: "Lemari Arsip 01",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 02",
     fileName: "LPJ_Kemah_Pramuka_2026.pdf",
     nominal: 80000000,
   },
@@ -139,6 +155,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "25 Jul 2026",
     ukuran: "2.5 MB",
     lemariArsip: "Lemari Arsip 01",
+    rakArsip: "Rak 02",
+    nomorArsip: "No. 03",
     fileName: "SK_Walikota_Wasbang_2026.pdf",
     nominal: 60000000,
   },
@@ -153,6 +171,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "18 Nov 2025",
     ukuran: "3.2 MB",
     lemariArsip: "Lemari Arsip 01",
+    rakArsip: "Rak 02",
+    nomorArsip: "No. 04",
     fileName: "BA_Evaluasi_Paskibraka_2025.pdf",
   },
 
@@ -168,6 +188,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "05 Agu 2026",
     ukuran: "3.4 MB",
     lemariArsip: "Lemari Arsip 02",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 01",
     fileName: "NPHD_Taman_Budaya_Final.pdf",
     nominal: 250000000,
   },
@@ -182,6 +204,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "03 Jul 2026",
     ukuran: "4.5 MB",
     lemariArsip: "Lemari Arsip 02",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 02",
     fileName: "NPHD_Paguyuban_Pasundan.pdf",
     nominal: 200000000,
   },
@@ -196,6 +220,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "15 Des 2025",
     ukuran: "8.1 MB",
     lemariArsip: "Lemari Arsip 02",
+    rakArsip: "Rak 02",
+    nomorArsip: "No. 03",
     fileName: "LPJ_KNPI_2025.pdf",
   },
 
@@ -211,6 +237,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "01 Agu 2026",
     ukuran: "4.2 MB",
     lemariArsip: "Lemari Arsip 03",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 01",
     fileName: "BA_Verifikasi_FKUB.pdf",
     nominal: 120000000,
   },
@@ -225,6 +253,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "15 Jul 2026",
     ukuran: "4.6 MB",
     lemariArsip: "Lemari Arsip 03",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 02",
     fileName: "LPJ_Safari_Ramadhan.pdf",
     nominal: 95000000,
   },
@@ -239,6 +269,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "10 Mar 2025",
     ukuran: "2.8 MB",
     lemariArsip: "Lemari Arsip 03",
+    rakArsip: "Rak 02",
+    nomorArsip: "No. 03",
     fileName: "SK_Hibah_FKUB_2025.pdf",
   },
 
@@ -254,6 +286,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "24 Jul 2026",
     ukuran: "3.1 MB",
     lemariArsip: "Lemari Arsip 04",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 01",
     fileName: "NPHD_Wasnas_BNNK.pdf",
     nominal: 75000000,
   },
@@ -268,6 +302,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "07 Agu 2026",
     ukuran: "3.8 MB",
     lemariArsip: "Lemari Arsip 04",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 02",
     fileName: "NPHD_FKDM_DeteksiDini.pdf",
     nominal: 95000000,
   },
@@ -282,6 +318,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "14 Agu 2025",
     ukuran: "6.2 MB",
     lemariArsip: "Lemari Arsip 04",
+    rakArsip: "Rak 02",
+    nomorArsip: "No. 03",
     fileName: "LPJ_Pencegahan_Radikalisme_2025.pdf",
   },
   {
@@ -295,6 +333,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "19 Mei 2025",
     ukuran: "1.9 MB",
     lemariArsip: "Lemari Arsip 04",
+    rakArsip: "Rak 02",
+    nomorArsip: "No. 04",
     fileName: "BA_Penanganan_Konflik_2025.pdf",
   },
 
@@ -310,6 +350,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "14 Sep 2021",
     ukuran: "5.1 MB",
     lemariArsip: "Lemari Arsip 01",
+    rakArsip: "Rak 05",
+    nomorArsip: "No. 51",
     fileName: "NPHD_Wasbang_2021.pdf",
     nominal: 70000000,
   },
@@ -324,6 +366,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "18 Nov 2020",
     ukuran: "7.8 MB",
     lemariArsip: "Lemari Arsip 02",
+    rakArsip: "Rak 05",
+    nomorArsip: "No. 52",
     fileName: "LPJ_Bantuan_Ormas_2020.pdf",
     nominal: 110000000,
   },
@@ -338,6 +382,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "08 Mei 2019",
     ukuran: "3.6 MB",
     lemariArsip: "Lemari Arsip 03",
+    rakArsip: "Rak 05",
+    nomorArsip: "No. 53",
     fileName: "SK_Walikota_FKUB_2019.pdf",
     nominal: 85000000,
   },
@@ -352,6 +398,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "22 Jun 2018",
     ukuran: "4.4 MB",
     lemariArsip: "Lemari Arsip 04",
+    rakArsip: "Rak 05",
+    nomorArsip: "No. 54",
     fileName: "BA_Monitoring_Pilkada_2018.pdf",
     nominal: 65000000,
   },
@@ -366,6 +414,8 @@ const initialArsip: ArsipItem[] = [
     tanggal: "12 Des 2020",
     ukuran: "12.5 MB",
     lemariArsip: "Lemari Arsip Khusus",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 01",
     fileName: "LHP_BPK_Hibah_2020.pdf",
   },
 ];
@@ -373,11 +423,23 @@ const initialArsip: ArsipItem[] = [
 interface HibahContextType {
   proposals: ProposalItem[];
   arsipList: ArsipItem[];
-  addProposal: (proposal: Omit<ProposalItem, "id" | "tanggal" | "tahun" | "lemariArsip"> & { file?: File | null; lemariArsip?: LemariArsip }) => Promise<void>;
+  addProposal: (
+    proposal: Omit<ProposalItem, "id" | "tanggal" | "tahun" | "lemariArsip" | "rakArsip" | "nomorArsip"> & {
+      file?: File | null;
+      lemariArsip?: LemariArsip;
+      rakArsip?: string;
+      nomorArsip?: string;
+    }
+  ) => Promise<void>;
   updateProposalLemari: (id: number, newLemari: LemariArsip) => void;
-  updateProposal: (id: number, updates: Partial<Pick<ProposalItem, "name" | "instansi" | "kategori" | "nominal" | "pic" | "noTelp" | "catatan">>) => void;
+  updateProposalLokasi: (id: number, newLemari: LemariArsip, newRak?: string, newNomor?: string) => void;
+  updateProposal: (
+    id: number,
+    updates: Partial<Pick<ProposalItem, "name" | "instansi" | "kategori" | "nominal" | "lemariArsip" | "rakArsip" | "nomorArsip" | "pic" | "noTelp" | "catatan">>
+  ) => void;
   deleteProposal: (id: number) => void;
   addArsip: (arsip: Omit<ArsipItem, "id">) => void;
+  updateArsipLokasi: (id: string, newLemari: LemariArsip, newRak?: string, newNomor?: string) => void;
   deleteArsip: (id: string) => void;
   isOlderThan5Years: (tahunStr: string | number) => boolean;
 }
@@ -397,7 +459,12 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addProposal = async (
-    newP: Omit<ProposalItem, "id" | "tanggal" | "tahun" | "lemariArsip"> & { file?: File | null; lemariArsip?: LemariArsip }
+    newP: Omit<ProposalItem, "id" | "tanggal" | "tahun" | "lemariArsip" | "rakArsip" | "nomorArsip"> & {
+      file?: File | null;
+      lemariArsip?: LemariArsip;
+      rakArsip?: string;
+      nomorArsip?: string;
+    }
   ) => {
     let fileDataUrl: string | undefined = undefined;
     let fileName: string | undefined = undefined;
@@ -430,6 +497,9 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
         ? "Lemari Arsip 03"
         : "Lemari Arsip 04");
 
+    const defaultRak = newP.rakArsip || "Rak 01";
+    const defaultNomor = newP.nomorArsip || `No. ${String(Math.floor(1 + Math.random() * 30)).padStart(2, "0")}`;
+
     const currentYear = new Date().getFullYear().toString();
 
     const created: ProposalItem = {
@@ -446,6 +516,8 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
       }),
       tahun: currentYear,
       lemariArsip: defaultLemari,
+      rakArsip: defaultRak,
+      nomorArsip: defaultNomor,
       pic: newP.pic,
       noTelp: newP.noTelp,
       catatan: newP.catatan,
@@ -470,6 +542,8 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
       tanggal: created.tanggal,
       ukuran: created.fileSize || "3.5 MB",
       lemariArsip: defaultLemari,
+      rakArsip: defaultRak,
+      nomorArsip: defaultNomor,
       nominal: newP.nominal,
       pic: newP.pic,
       noTelp: newP.noTelp,
@@ -481,11 +555,21 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
     setArsipList((arsipPrev) => [newArsipItem, ...arsipPrev]);
   };
 
-  const updateProposalLemari = (id: number, newLemari: LemariArsip) => {
+  const updateProposalLokasi = (
+    id: number,
+    newLemari: LemariArsip,
+    newRak?: string,
+    newNomor?: string
+  ) => {
     setProposals((prev) =>
       prev.map((item) => {
         if (item.id === id) {
-          return { ...item, lemariArsip: newLemari };
+          return {
+            ...item,
+            lemariArsip: newLemari,
+            ...(newRak !== undefined ? { rakArsip: newRak } : {}),
+            ...(newNomor !== undefined ? { nomorArsip: newNomor } : {}),
+          };
         }
         return item;
       })
@@ -495,7 +579,37 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
     setArsipList((arsipPrev) =>
       arsipPrev.map((item) => {
         if (item.id === `arsip-auto-${id}`) {
-          return { ...item, lemariArsip: newLemari };
+          return {
+            ...item,
+            lemariArsip: newLemari,
+            ...(newRak !== undefined ? { rakArsip: newRak } : {}),
+            ...(newNomor !== undefined ? { nomorArsip: newNomor } : {}),
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const updateProposalLemari = (id: number, newLemari: LemariArsip) => {
+    updateProposalLokasi(id, newLemari);
+  };
+
+  const updateArsipLokasi = (
+    id: string,
+    newLemari: LemariArsip,
+    newRak?: string,
+    newNomor?: string
+  ) => {
+    setArsipList((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          return {
+            ...item,
+            lemariArsip: newLemari,
+            ...(newRak !== undefined ? { rakArsip: newRak } : {}),
+            ...(newNomor !== undefined ? { nomorArsip: newNomor } : {}),
+          };
         }
         return item;
       })
@@ -504,7 +618,7 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
 
   const updateProposal = (
     id: number,
-    updates: Partial<Pick<ProposalItem, "name" | "instansi" | "kategori" | "nominal" | "pic" | "noTelp" | "catatan">>
+    updates: Partial<Pick<ProposalItem, "name" | "instansi" | "kategori" | "nominal" | "lemariArsip" | "rakArsip" | "nomorArsip" | "pic" | "noTelp" | "catatan">>
   ) => {
     setProposals((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
@@ -535,9 +649,11 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
         arsipList,
         addProposal,
         updateProposalLemari,
+        updateProposalLokasi,
         updateProposal,
         deleteProposal,
         addArsip,
+        updateArsipLokasi,
         deleteArsip,
         isOlderThan5Years,
       }}

@@ -6,7 +6,6 @@ import DashboardPage from "@/app/(dashboard)/page";
 import HibahTable from "@/components/hibah-table";
 import ArsipTable from "@/components/arsip-table";
 import LembagaPage from "@/app/(dashboard)/lembaga/page";
-import LaporanPage from "@/app/(dashboard)/laporan/page";
 import PenggunaPage from "@/app/(dashboard)/pengguna/page";
 import PengaturanPage from "@/app/(dashboard)/pengaturan/page";
 import BantuanPage from "@/app/(dashboard)/bantuan/page";
@@ -24,8 +23,6 @@ export default function DynamicSubPage() {
       return <ArsipTable />;
     case "lembaga":
       return <LembagaPage />;
-    case "laporan":
-      return <LaporanPage />;
     case "pengguna":
       return <PenggunaPage />;
     case "pengaturan":

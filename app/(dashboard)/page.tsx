@@ -21,7 +21,7 @@ import {
   TrendUpIcon,
 } from "@/components/icons";
 import CurrentDate from "@/components/current-date";
-import StatusBadge, { RetentionBadge } from "@/components/status-badge";
+import StatusBadge, { RetentionBadge, LokasiArsipBadge } from "@/components/status-badge";
 
 // ---------- Mock Data ----------
 
@@ -91,6 +91,8 @@ interface ProposalData {
   tanggal: string;
   tahun: string;
   lemariArsip: string;
+  rakArsip?: string;
+  nomorArsip?: string;
   catatanBidang?: string;
 }
 
@@ -105,6 +107,8 @@ const allProposals: ProposalData[] = [
     tanggal: "10 Agu 2026",
     tahun: "2026",
     lemariArsip: "Lemari Arsip 01",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 01",
     catatanBidang: "Dokumen NPHD lengkap dan terarsip di Lemari 01",
   },
   {
@@ -116,6 +120,8 @@ const allProposals: ProposalData[] = [
     tanggal: "08 Agu 2026",
     tahun: "2026",
     lemariArsip: "Lemari Arsip 01",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 02",
     catatanBidang: "Berkas tersimpan di Lemari Arsip 01 Bidang 1",
   },
   {
@@ -127,6 +133,8 @@ const allProposals: ProposalData[] = [
     tanggal: "29 Jul 2026",
     tahun: "2026",
     lemariArsip: "Lemari Arsip 01",
+    rakArsip: "Rak 02",
+    nomorArsip: "No. 03",
     catatanBidang: "Tersimpan di Lemari Arsip 01",
   },
 
@@ -140,6 +148,8 @@ const allProposals: ProposalData[] = [
     tanggal: "05 Agu 2026",
     tahun: "2026",
     lemariArsip: "Lemari Arsip 02",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 01",
     catatanBidang: "Dokumen NPHD lengkap di Lemari Arsip 02",
   },
   {
@@ -151,6 +161,8 @@ const allProposals: ProposalData[] = [
     tanggal: "03 Agu 2026",
     tahun: "2026",
     lemariArsip: "Lemari Arsip 02",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 02",
     catatanBidang: "Tersimpan di Lemari Arsip 02",
   },
 
@@ -164,6 +176,8 @@ const allProposals: ProposalData[] = [
     tanggal: "04 Agu 2026",
     tahun: "2026",
     lemariArsip: "Lemari Arsip 03",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 01",
     catatanBidang: "Tersimpan di Lemari Arsip 03",
   },
   {
@@ -175,6 +189,8 @@ const allProposals: ProposalData[] = [
     tanggal: "01 Agu 2026",
     tahun: "2026",
     lemariArsip: "Lemari Arsip 03",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 02",
     catatanBidang: "NPHD tersimpan di Lemari Arsip 03",
   },
 
@@ -188,6 +204,8 @@ const allProposals: ProposalData[] = [
     tanggal: "07 Agu 2026",
     tahun: "2026",
     lemariArsip: "Lemari Arsip 04",
+    rakArsip: "Rak 01",
+    nomorArsip: "No. 01",
     catatanBidang: "Tersimpan di Lemari Arsip 04",
   },
 ];
@@ -206,12 +224,6 @@ export default function DashboardPage() {
       {/* Top Banner Mode Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 p-6 text-white shadow-xl shadow-red-600/15">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            {mode === "admin"
-              ? "Sistem Pengarsipan Kesbangpol"
-              : `Bidang ${bidangId} - ${bidangInfo[bidangId].shortName}`}
-          </div>
           <h1 className="text-xl sm:text-2xl font-black tracking-tight">
             {mode === "admin"
               ? "Sistem Pengarsipan Hibah Daerah"
@@ -416,7 +428,7 @@ export default function DashboardPage() {
                 <th className="px-5 py-3 font-semibold">Instansi / Pemohon</th>
                 <th className="px-5 py-3 font-semibold whitespace-nowrap">Tujuan Bidang</th>
                 <th className="px-5 py-3 font-semibold whitespace-nowrap">Nominal</th>
-                <th className="px-5 py-3 font-semibold whitespace-nowrap">Lemari Arsip</th>
+                <th className="px-5 py-3 font-semibold whitespace-nowrap">Lokasi Fisik Arsip</th>
                 <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
@@ -448,7 +460,12 @@ export default function DashboardPage() {
                     {p.nominal}
                   </td>
                   <td className="px-5 py-4 whitespace-nowrap">
-                    <StatusBadge status={p.lemariArsip} />
+                    <LokasiArsipBadge
+                      lemari={p.lemariArsip}
+                      rak={p.rakArsip || "Rak 01"}
+                      nomor={p.nomorArsip || "No. 01"}
+                      compact={true}
+                    />
                   </td>
                   <td className="px-5 py-4 whitespace-nowrap text-left">
                     <div className="flex items-center justify-start gap-1.5">

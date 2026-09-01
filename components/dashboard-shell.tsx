@@ -48,7 +48,6 @@ export default function DashboardShell({
     beranda: "Beranda",
     hibah: "Data Hibah",
     arsip: "Arsip Dokumen Bidang",
-    laporan: "Laporan",
     lembaga: "Lembaga & Ormas",
     pengguna: "Pengguna",
     pengaturan: "Pengaturan",

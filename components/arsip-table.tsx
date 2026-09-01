@@ -7,8 +7,9 @@ import {
   ArsipItem,
   LemariArsip,
   LEMARI_OPTIONS,
+  RAK_OPTIONS,
 } from "@/context/hibah-context";
-import StatusBadge, { RetentionBadge } from "./status-badge";
+import StatusBadge, { RetentionBadge, LokasiArsipBadge } from "./status-badge";
 import {
   ArchiveIcon,
   CheckCircleIcon,
@@ -56,7 +57,7 @@ const tahunList = [
 
 export default function ArsipTable() {
   const { mode, bidangId } = useMode();
-  const { arsipList, addArsip, deleteArsip, isOlderThan5Years } = useHibah();
+  const { arsipList, addArsip, updateArsipLokasi, deleteArsip, isOlderThan5Years } = useHibah();
 
   const [query, setQuery] = useState("");
   const [selectedJenis, setSelectedJenis] = useState("Semua");
@@ -85,6 +86,8 @@ export default function ArsipTable() {
       ? (`Lemari Arsip 0${bidangId}` as LemariArsip)
       : "Lemari Arsip 01"
   );
+  const [newRak, setNewRak] = useState("Rak 01");
+  const [newNomor, setNewNomor] = useState("No. 01");
   const [newTahun, setNewTahun] = useState("2026");
   const [newTanggal, setNewTanggal] = useState(
     new Date().toISOString().split("T")[0]
@@ -187,6 +190,8 @@ export default function ArsipTable() {
         ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`
         : `${(Math.random() * 4 + 1.5).toFixed(1)} MB`,
       lemariArsip: newLemari,
+      rakArsip: newRak,
+      nomorArsip: newNomor,
       status: "Aktif",
       nominal: Number(newNominal.replace(/\D/g, "")) || undefined,
       catatan: newCatatan,
@@ -439,7 +444,7 @@ export default function ArsipTable() {
               <tr className="border-b border-zinc-100 bg-zinc-50/70 text-xs uppercase tracking-wider text-zinc-400">
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Kode Arsip</th>
                 <th className="px-5 py-3.5 font-semibold min-w-[200px]">Judul Dokumen</th>
-                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Lemari Arsip</th>
+                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Lokasi Fisik Arsip</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Bidang</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Jenis</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Tahun / Tgl</th>
@@ -474,7 +479,12 @@ export default function ArsipTable() {
                       </div>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <StatusBadge status={item.lemariArsip} />
+                      <LokasiArsipBadge
+                        lemari={item.lemariArsip}
+                        rak={item.rakArsip || "Rak 01"}
+                        nomor={item.nomorArsip || "No. 01"}
+                        compact={true}
+                      />
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <span
@@ -583,7 +593,7 @@ export default function ArsipTable() {
                   Input Berkas Arsip Digital Baru
                 </h3>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  Tambahkan arsip naskah hibah, berita acara, SK, atau LPJ ke dalam lemari arsip.
+                  Tambahkan arsip naskah hibah, berita acara, SK, atau LPJ ke dalam lemari, rak, dan nomor berkas.
                 </p>
               </div>
               <button
@@ -598,14 +608,13 @@ export default function ArsipTable() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Kode Registrasi Arsip *
+                    Kode Arsip (Auto-Generated)
                   </label>
                   <input
                     type="text"
-                    required
+                    readOnly
                     value={newKode}
-                    onChange={(e) => setNewKode(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 font-mono text-xs font-bold outline-none focus:border-red-400"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-xs font-mono font-bold text-zinc-600 outline-none"
                   />
                 </div>
 
@@ -620,39 +629,35 @@ export default function ArsipTable() {
                     }
                     className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
                   >
-                    <option value="NPHD">NPHD (Naskah Perjanjian Hibah)</option>
-                    <option value="SK Hibah">Surat Keputusan (SK Hibah)</option>
-                    <option value="LPJ Terverifikasi">
-                      LPJ Terverifikasi
-                    </option>
-                    <option value="Berita Acara">
-                      Berita Acara Hasil Verifikasi
-                    </option>
-                    <option value="Proposal & RAB">
-                      Proposal Usulan & RAB
-                    </option>
+                    {jenisList
+                      .filter((j) => j !== "Semua")
+                      .map((j) => (
+                        <option key={j} value={j}>
+                          {j}
+                        </option>
+                      ))}
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Judul Berkas Arsip *
+                  Judul Berkas Dokumen *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Misal: NPHD Pembinaan Kader Bela Negara Kota Bandung 2026"
+                  placeholder="Misal: NPHD Penyelenggaraan Pembinaan Bela Negara & Karakter"
                   value={newJudul}
                   onChange={(e) => setNewJudul(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400"
+                  className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Instansi / Lembaga Pemilik Berkas *
+                    Instansi / Lembaga Penerima *
                   </label>
                   <input
                     type="text"
@@ -678,6 +683,63 @@ export default function ArsipTable() {
                 </div>
               </div>
 
+              {/* Alokasi Lokasi Arsip: Lemari, Rak, Nomor */}
+              <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <ArchiveIcon className="h-4 w-4 text-red-600" />
+                  <p className="text-xs font-bold text-zinc-900">Alokasi Lokasi Fisik Penyimpanan Arsip</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                      1. Lemari Arsip *
+                    </label>
+                    <select
+                      value={newLemari}
+                      onChange={(e) => setNewLemari(e.target.value as LemariArsip)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                    >
+                      {LEMARI_OPTIONS.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                      2. Posisi Rak *
+                    </label>
+                    <select
+                      value={newRak}
+                      onChange={(e) => setNewRak(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                    >
+                      {RAK_OPTIONS.map((rak) => (
+                        <option key={rak} value={rak}>
+                          {rak}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                      3. Nomor Berkas / Urut *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Misal: No. 05"
+                      value={newNomor}
+                      onChange={(e) => setNewNomor(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono text-zinc-900 outline-none focus:border-red-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
@@ -698,23 +760,6 @@ export default function ArsipTable() {
                     {([1, 2, 3, 4] as BidangId[]).map((id) => (
                       <option key={id} value={id}>
                         Bidang {id} ({bidangInfo[id].shortName})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Penempatan Lemari Arsip *
-                  </label>
-                  <select
-                    value={newLemari}
-                    onChange={(e) => setNewLemari(e.target.value as LemariArsip)}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-bold text-zinc-800 outline-none focus:border-red-400 bg-zinc-50"
-                  >
-                    {LEMARI_OPTIONS.map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.label}
                       </option>
                     ))}
                   </select>
@@ -851,12 +896,15 @@ export default function ArsipTable() {
             <div className="mt-4 flex-1 overflow-y-auto space-y-5 pr-1 text-xs">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-xl bg-zinc-50 p-3 border border-zinc-100">
-                  <span className="text-zinc-400 block text-[11px]">
-                    Lokasi Lemari Arsip
+                  <span className="text-zinc-400 block text-[11px] mb-1">
+                    Lokasi Fisik Arsip
                   </span>
-                  <div className="mt-1">
-                    <StatusBadge status={selectedDetail.lemariArsip} />
-                  </div>
+                  <LokasiArsipBadge
+                    lemari={selectedDetail.lemariArsip}
+                    rak={selectedDetail.rakArsip || "Rak 01"}
+                    nomor={selectedDetail.nomorArsip || "No. 01"}
+                    compact={true}
+                  />
                 </div>
                 <div className="rounded-xl bg-zinc-50 p-3 border border-zinc-100">
                   <span className="text-zinc-400 block text-[11px]">
@@ -881,6 +929,86 @@ export default function ArsipTable() {
                   <p className="font-semibold text-zinc-800 mt-0.5 font-mono">
                     {selectedDetail.ukuran}
                   </p>
+                </div>
+              </div>
+
+              {/* Quick Lokasi Switcher Inside Detail */}
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 space-y-3">
+                <div>
+                  <p className="font-bold text-zinc-900 text-xs">Pindahkan Lokasi Fisik Lemari, Rak & Nomor</p>
+                  <p className="text-[11px] text-zinc-500">
+                    Ubah lokasi penempatan lemari arsip fisik secara instan.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <span className="text-[11px] font-bold text-zinc-600 block mb-1">Pilih Lemari:</span>
+                    <select
+                      value={selectedDetail.lemariArsip}
+                      onChange={(e) => {
+                        const newL = e.target.value as LemariArsip;
+                        updateArsipLokasi(
+                          selectedDetail.id,
+                          newL,
+                          selectedDetail.rakArsip || "Rak 01",
+                          selectedDetail.nomorArsip || "No. 01"
+                        );
+                        setSelectedDetail({ ...selectedDetail, lemariArsip: newL });
+                      }}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none shadow-xs"
+                    >
+                      {LEMARI_OPTIONS.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-bold text-zinc-600 block mb-1">Pilih Rak:</span>
+                    <select
+                      value={selectedDetail.rakArsip || "Rak 01"}
+                      onChange={(e) => {
+                        const newR = e.target.value;
+                        updateArsipLokasi(
+                          selectedDetail.id,
+                          selectedDetail.lemariArsip,
+                          newR,
+                          selectedDetail.nomorArsip || "No. 01"
+                        );
+                        setSelectedDetail({ ...selectedDetail, rakArsip: newR });
+                      }}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none shadow-xs"
+                    >
+                      {RAK_OPTIONS.map((rak) => (
+                        <option key={rak} value={rak}>
+                          {rak}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-bold text-zinc-600 block mb-1">Nomor Berkas:</span>
+                    <input
+                      type="text"
+                      defaultValue={selectedDetail.nomorArsip || "No. 01"}
+                      onBlur={(e) => {
+                        const newN = e.target.value;
+                        updateArsipLokasi(
+                          selectedDetail.id,
+                          selectedDetail.lemariArsip,
+                          selectedDetail.rakArsip || "Rak 01",
+                          newN
+                        );
+                        setSelectedDetail({ ...selectedDetail, nomorArsip: newN });
+                      }}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono text-zinc-900 outline-none shadow-xs"
+                      placeholder="No. 01"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -962,7 +1090,10 @@ export default function ArsipTable() {
                             <strong>Jenis Dokumen:</strong> {selectedDetail.jenis}
                           </p>
                           <p>
-                            <strong>Lokasi Lemari:</strong> <span className="text-red-700 font-bold">{selectedDetail.lemariArsip}</span>
+                            <strong>Lokasi Fisik Arsip:</strong>{" "}
+                            <span className="text-red-700 font-bold">
+                              {selectedDetail.lemariArsip} &bull; {selectedDetail.rakArsip || "Rak 01"} &bull; {selectedDetail.nomorArsip || "No. 01"}
+                            </span>
                           </p>
                           <p>
                             <strong>Tahun Anggaran:</strong> T.A. {selectedDetail.tahun} ({selectedDetail.tanggal})
@@ -990,9 +1121,9 @@ export default function ArsipTable() {
                             TERSIMPAN DI {selectedDetail.lemariArsip.toUpperCase()}
                           </div>
                           <p className="mt-4 font-bold underline">
-                            Unit Kearsipan Kesbangpol
+                            {selectedDetail.lemariArsip} ({selectedDetail.rakArsip || "Rak 01"} - {selectedDetail.nomorArsip || "No. 01"})
                           </p>
-                          <p className="text-zinc-400">NIP. 19820315 200801 1 012</p>
+                          <p className="text-zinc-400">Unit Kearsipan Kesbangpol</p>
                         </div>
                       </div>
                     </div>
