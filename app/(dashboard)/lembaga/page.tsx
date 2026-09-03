@@ -18,6 +18,7 @@ import {
   UploadIcon,
   XIcon,
 } from "@/components/icons";
+import DeleteConfirmModal from "@/components/delete-confirm-modal";
 
 type StatusLembaga = "Sedang Mengajukan" | "Terakhir Mengajukan";
 
@@ -297,6 +298,7 @@ function JenisOrganisasiDropdown({
 
 interface LembagaItem {
   id: string;
+  dbId?: number;
   nama: string;
   singkatan: string;
   logo?: string;
@@ -309,16 +311,17 @@ interface LembagaItem {
   tahun?: string;
 }
 
-const mockLembaga: LembagaItem[] = [];
-
 export default function LembagaPage() {
   const { mode, bidangId } = useMode();
-  const [lembagaList, setLembagaList] = useState<LembagaItem[]>(mockLembaga);
+  const [lembagaList, setLembagaList] = useState<LembagaItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [filterBidang, setFilterBidang] = useState<BidangId | "Semua">("Semua");
   const [filterStatus, setFilterStatus] = useState<StatusLembaga | "Semua">("Semua");
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<LembagaItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LembagaItem | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Edit Mode states
   const [isEditing, setIsEditing] = useState(false);
@@ -345,6 +348,44 @@ export default function LembagaPage() {
 
   const addFileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  // Ambil data mitra kerja dari database saat halaman dibuka
+  const fetchLembaga = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/lembaga");
+      if (res.ok) {
+        const json = await res.json();
+        const mapped: LembagaItem[] = (json.data || []).map((row: any) => ({
+          id: `lembaga-db-${row.id}`,
+          dbId: row.id,
+          nama: row.Nama_lembaga_ormas || "",
+          singkatan: (row.Nama_lembaga_ormas || "").split(" ").map((w: string) => w[0]).join("").slice(0, 5).toUpperCase(),
+          bidangId: (Number(row.bidang_yang_terkait) as BidangId) || 1,
+          jenisOrganisasi: row.jenis_organisasi || "",
+          alamat: row.alamat_sekretariat || "",
+          pic: row.nama_ketua || "",
+          noTelp: row.nomor_contact || undefined,
+          status: "Sedang Mengajukan" as StatusLembaga,
+          tahun: new Date().getFullYear().toString(),
+        }));
+        setLembagaList(mapped);
+      }
+    } catch (err) {
+      console.error("Gagal fetch lembaga:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLembaga();
+  }, []);
 
   // Sync state when mode/bidangId updates
   useEffect(() => {
@@ -389,35 +430,60 @@ export default function LembagaPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleAddLembaga = (e: React.FormEvent) => {
+  // Tambah mitra kerja baru -> Simpan ke database MySQL
+  const handleAddLembaga = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nama.trim() || !singkatan.trim()) return;
 
-    const newItem: LembagaItem = {
-      id: String(Date.now()),
-      nama: nama.trim(),
-      singkatan: singkatan.trim().toUpperCase(),
-      logo,
-      bidangId: bidang,
-      jenisOrganisasi,
-      alamat: alamat.trim() || "Jl. Wastukencana No. 2, Bandung",
-      pic: pic.trim() || "Penanggung Jawab Lembaga",
-      noTelp: noTelp.trim() || "0812-xxxx-xxxx",
-      status: "Sedang Mengajukan",
-      tahun: "2026",
-    };
+    try {
+      const res = await fetch("/api/lembaga", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          Nama_lembaga_ormas: nama.trim(),
+          jenis_organisasi: jenisOrganisasi,
+          bidang_yang_terkait: String(bidang),
+          nama_ketua: pic.trim() || "Penanggung Jawab Lembaga",
+          nomor_contact: noTelp.trim() || null,
+          alamat_sekretariat: alamat.trim() || "",
+        }),
+      });
 
-    setLembagaList([newItem, ...lembagaList]);
-    setShowAddModal(false);
+      if (res.ok) {
+        const json = await res.json();
+        const newItem: LembagaItem = {
+          id: `lembaga-db-${json.id}`,
+          dbId: json.id,
+          nama: nama.trim(),
+          singkatan: singkatan.trim().toUpperCase(),
+          logo,
+          bidangId: bidang,
+          jenisOrganisasi,
+          alamat: alamat.trim() || "",
+          pic: pic.trim() || "Penanggung Jawab Lembaga",
+          noTelp: noTelp.trim() || undefined,
+          status: "Sedang Mengajukan",
+          tahun: new Date().getFullYear().toString(),
+        };
+        setLembagaList([newItem, ...lembagaList]);
+        setShowAddModal(false);
+        showToast(`Mitra kerja "${nama.trim()}" berhasil disimpan ke database.`);
 
-    // Reset Form
-    setNama("");
-    setSingkatan("");
-    setLogo(undefined);
-    setPic("");
-    setNoTelp("");
-    setAlamat("");
-    setJenisOrganisasi(JENIS_ORGANISASI_GROUPS[1].options[0].value);
+        // Reset Form
+        setNama("");
+        setSingkatan("");
+        setLogo(undefined);
+        setPic("");
+        setNoTelp("");
+        setAlamat("");
+        setJenisOrganisasi(JENIS_ORGANISASI_GROUPS[1].options[0].value);
+      } else {
+        const err = await res.json();
+        alert(`Gagal menyimpan ke database: ${err.error}`);
+      }
+    } catch (err) {
+      console.error("Gagal simpan lembaga:", err);
+    }
   };
 
   const startEdit = (item: LembagaItem) => {
@@ -432,32 +498,76 @@ export default function LembagaPage() {
     setEditAlamat(item.alamat);
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  // Simpan perubahan mitra kerja -> Update di database MySQL
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDetail || !editNama.trim() || !editSingkatan.trim()) return;
 
-    const updatedItem: LembagaItem = {
-      ...selectedDetail,
-      nama: editNama.trim(),
-      singkatan: editSingkatan.trim().toUpperCase(),
-      logo: editLogo,
-      bidangId: editBidang,
-      jenisOrganisasi: editJenis,
-      pic: editPic.trim(),
-      noTelp: editNoTelp.trim(),
-      alamat: editAlamat.trim(),
-    };
+    try {
+      const res = await fetch("/api/lembaga", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedDetail.dbId,
+          Nama_lembaga_ormas: editNama.trim(),
+          jenis_organisasi: editJenis,
+          bidang_yang_terkait: String(editBidang),
+          nama_ketua: editPic.trim(),
+          nomor_contact: editNoTelp.trim() || null,
+          alamat_sekretariat: editAlamat.trim(),
+        }),
+      });
 
-    setLembagaList((prev) => prev.map((l) => (l.id === selectedDetail.id ? updatedItem : l)));
-    setSelectedDetail(updatedItem);
-    setIsEditing(false);
+      if (res.ok) {
+        const updatedItem: LembagaItem = {
+          ...selectedDetail,
+          nama: editNama.trim(),
+          singkatan: editSingkatan.trim().toUpperCase(),
+          logo: editLogo,
+          bidangId: editBidang,
+          jenisOrganisasi: editJenis,
+          pic: editPic.trim(),
+          noTelp: editNoTelp.trim() || undefined,
+          alamat: editAlamat.trim(),
+        };
+        setLembagaList((prev) => prev.map((l) => (l.id === selectedDetail.id ? updatedItem : l)));
+        setSelectedDetail(updatedItem);
+        setIsEditing(false);
+        showToast(`Data "${editNama.trim()}" berhasil diperbarui di database.`);
+      } else {
+        alert("Gagal memperbarui data di database.");
+      }
+    } catch (err) {
+      console.error("Gagal update lembaga:", err);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data mitra kerja ini secara permanen?")) {
-      setLembagaList((prev) => prev.filter((item) => item.id !== id));
-      setSelectedDetail(null);
-      setIsEditing(false);
+  const handleDeletePrompt = (id: string) => {
+    const item = lembagaList.find((l) => l.id === id);
+    if (item) {
+      setDeleteTarget(item);
+    }
+  };
+
+  const executeDelete = async (target: LembagaItem) => {
+    const dbId = target.dbId || parseInt(target.id.replace(/\D/g, ""), 10);
+
+    if (dbId) {
+      try {
+        const res = await fetch(`/api/lembaga?id=${dbId}`, { method: "DELETE" });
+        if (res.ok) {
+          setLembagaList((prev) => prev.filter((l) => l.id !== target.id));
+          if (selectedDetail?.id === target.id) {
+            setSelectedDetail(null);
+            setIsEditing(false);
+          }
+          showToast(`Mitra kerja "${target.nama}" berhasil dihapus dari database.`);
+        } else {
+          alert("Gagal menghapus data dari database.");
+        }
+      } catch (err) {
+        console.error("Gagal hapus lembaga:", err);
+      }
     }
   };
 
@@ -466,6 +576,19 @@ export default function LembagaPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-zinc-900 px-5 py-3.5 text-xs font-semibold text-white shadow-2xl animate-fade-in">
+          <span>{toastMessage}</span>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="ml-2 text-zinc-400 hover:text-white"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
@@ -561,75 +684,93 @@ export default function LembagaPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {filtered.map((item) => (
-                <tr key={item.id} className="transition-colors hover:bg-zinc-50/80">
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      {item.logo ? (
-                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.logo}
-                            alt={item.nama}
-                            className="h-full w-full object-contain p-0.5"
-                          />
-                        </div>
-                      ) : (
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[10px] font-black text-white shadow-xs ${bidangInfo[item.bidangId].color}`}
-                        >
-                          {item.singkatan.slice(0, 4)}
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-semibold text-zinc-900 leading-tight">{item.nama}</p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">{item.jenisOrganisasi}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white whitespace-nowrap shadow-xs ${bidangInfo[item.bidangId].color}`}
-                    >
-                      Bidang {item.bidangId}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 max-w-[260px]">
-                    <div className="flex items-start gap-1.5 text-xs text-zinc-600">
-                      <MapPinIcon className="h-3.5 w-3.5 shrink-0 text-zinc-400 mt-0.5" />
-                      <span className="line-clamp-2 leading-relaxed">{item.alamat}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 whitespace-nowrap">
-                    <p className="text-xs font-semibold text-zinc-900">{item.pic}</p>
-                    {item.noTelp && (
-                      <p className="text-[11px] text-zinc-400 mt-0.5 flex items-center gap-1">
-                        <PhoneIcon className="h-3 w-3 text-zinc-400" />
-                        {item.noTelp}
-                      </p>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 whitespace-nowrap text-left">
-                    <button
-                      onClick={() => {
-                        setSelectedDetail(item);
-                        setIsEditing(false);
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-colors shadow-xs whitespace-nowrap shrink-0"
-                      title="Lihat Detail Mitra Kerja"
-                    >
-                      <EyeIcon className="h-3.5 w-3.5" />
-                      <span>Detail</span>
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-14 text-center text-xs text-zinc-400">
+                    Memuat data mitra kerja dari database...
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-14 text-center text-sm text-zinc-400">
-                    Tidak ada mitra kerja yang sesuai dengan filter pencarian.
+                    {lembagaList.length === 0
+                      ? "Belum ada data mitra kerja di database. Silakan klik 'Daftarkan Mitra Kerja'."
+                      : "Tidak ada mitra kerja yang sesuai dengan filter pencarian."}
                   </td>
                 </tr>
+              ) : (
+                filtered.map((item) => (
+                  <tr key={item.id} className="transition-colors hover:bg-zinc-50/80">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        {item.logo ? (
+                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={item.logo}
+                              alt={item.nama}
+                              className="h-full w-full object-contain p-0.5"
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[10px] font-black text-white shadow-xs ${bidangInfo[item.bidangId].color}`}
+                          >
+                            {item.singkatan.slice(0, 4)}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-semibold text-zinc-900 leading-tight">{item.nama}</p>
+                          <p className="text-[11px] text-zinc-500 mt-0.5">{item.jenisOrganisasi}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white whitespace-nowrap shadow-xs ${bidangInfo[item.bidangId].color}`}
+                      >
+                        Bidang {item.bidangId}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 max-w-[260px]">
+                      <div className="flex items-start gap-1.5 text-xs text-zinc-600">
+                        <MapPinIcon className="h-3.5 w-3.5 shrink-0 text-zinc-400 mt-0.5" />
+                        <span className="line-clamp-2 leading-relaxed">{item.alamat}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <p className="text-xs font-semibold text-zinc-900">{item.pic}</p>
+                      {item.noTelp && (
+                        <p className="text-[11px] text-zinc-400 mt-0.5 flex items-center gap-1">
+                          <PhoneIcon className="h-3 w-3 text-zinc-400" />
+                          {item.noTelp}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 whitespace-nowrap text-left">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => {
+                            setSelectedDetail(item);
+                            setIsEditing(false);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-colors shadow-xs whitespace-nowrap shrink-0"
+                          title="Lihat Detail Mitra Kerja"
+                        >
+                          <EyeIcon className="h-3.5 w-3.5" />
+                          <span>Detail</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeletePrompt(item.id)}
+                          className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"
+                          title="Hapus Mitra Kerja dari Database"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -925,7 +1066,7 @@ export default function LembagaPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-5 border-t border-zinc-100">
                   <button
                     type="button"
-                    onClick={() => handleDelete(selectedDetail.id)}
+                    onClick={() => handleDeletePrompt(selectedDetail.id)}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-600 hover:bg-red-100 transition"
                   >
                     <TrashIcon className="h-3.5 w-3.5" />
@@ -1161,6 +1302,18 @@ export default function LembagaPage() {
           </div>
         </div>
       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        itemName={deleteTarget?.nama || ""}
+        onConfirm={() => {
+          if (deleteTarget) {
+            executeDelete(deleteTarget);
+          }
+        }}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

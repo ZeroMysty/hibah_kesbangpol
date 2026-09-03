@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { BidangId } from "./mode-context";
 
 export type LemariArsip =
@@ -36,15 +36,16 @@ export interface ProposalItem {
   tanggal: string;
   tahun: string;
   lemariArsip: LemariArsip;
-  rakArsip?: string;   // e.g. "Rak 01", "Rak 02", ...
-  nomorArsip?: string; // e.g. "No. 01", "No. 12", ...
+  rakArsip?: string;
+  nomorArsip?: string;
   pic?: string;
   noTelp?: string;
   catatan?: string;
   fileName?: string;
   fileSize?: string;
-  fileDataUrl?: string; // Data URL or object URL for document viewer
+  fileDataUrl?: string;
   fileType?: string;
+  dbId?: number;
 }
 
 export interface ArsipItem {
@@ -58,8 +59,8 @@ export interface ArsipItem {
   tanggal: string;
   ukuran: string;
   lemariArsip: LemariArsip;
-  rakArsip?: string;   // e.g. "Rak 01", "Rak 02", ...
-  nomorArsip?: string; // e.g. "No. 01", "No. 12", ...
+  rakArsip?: string;
+  nomorArsip?: string;
   status?: "Aktif" | "Permanen" | "Inaktif";
   nominal?: number;
   pic?: string;
@@ -68,15 +69,13 @@ export interface ArsipItem {
   fileName?: string;
   fileDataUrl?: string;
   fileType?: string;
+  dbId?: number;
 }
-
-const initialProposals: ProposalItem[] = [];
-
-const initialArsip: ArsipItem[] = [];
 
 interface HibahContextType {
   proposals: ProposalItem[];
   arsipList: ArsipItem[];
+  isLoading: boolean;
   addProposal: (
     proposal: Omit<ProposalItem, "id" | "tanggal" | "tahun" | "lemariArsip" | "rakArsip" | "nomorArsip"> & {
       file?: File | null;
@@ -90,21 +89,61 @@ interface HibahContextType {
   updateProposal: (
     id: number,
     updates: Partial<Pick<ProposalItem, "name" | "instansi" | "kategori" | "nominal" | "lemariArsip" | "rakArsip" | "nomorArsip" | "pic" | "noTelp" | "catatan">>
-  ) => void;
-  deleteProposal: (id: number) => void;
-  addArsip: (arsip: Omit<ArsipItem, "id">) => void;
+  ) => Promise<void>;
+  deleteProposal: (id: number) => Promise<void>;
+  addArsip: (arsip: Omit<ArsipItem, "id">) => Promise<void>;
   updateArsipLokasi: (id: string, newLemari: LemariArsip, newRak?: string, newNomor?: string) => void;
-  deleteArsip: (id: string) => void;
+  deleteArsip: (id: string) => Promise<void>;
   isOlderThan5Years: (tahunStr: string | number) => boolean;
+  refreshData: () => Promise<void>;
 }
 
 const HibahContext = createContext<HibahContextType | undefined>(undefined);
 
-export function HibahProvider({ children }: { children: React.ReactNode }) {
-  const [proposals, setProposals] = useState<ProposalItem[]>(initialProposals);
-  const [arsipList, setArsipList] = useState<ArsipItem[]>(initialArsip);
+function dbRowToProposal(row: any): ProposalItem {
+  return {
+    id: row.id,
+    dbId: row.id,
+    name: row.jenis_dokume_arsip || "",
+    instansi: row.lembaga || "",
+    bidangId: (Number(row.tujuan_bidang_teknis) as BidangId) || 1,
+    kategori: row.kategori_program || "Seni Budaya",
+    nominal: Number(String(row.nominal_diajukan).replace(/\D/g, "")) || 0,
+    tanggal: new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
+    tahun: new Date().getFullYear().toString(),
+    lemariArsip: (row.lemari_arsip as LemariArsip) || "Lemari Arsip 01",
+    rakArsip: row.posisi_rak || "Rak 01",
+    nomorArsip: row.nomor_berkas || "No. 01",
+    pic: row.nama_penanggung_jawab || "",
+    fileName: row.scan_foto || undefined,
+  };
+}
 
-  // Helper untuk menentukan apakah dokumen > 5 tahun (terhadap tahun berjalan 2026)
+function dbRowToArsip(row: any): ArsipItem {
+  return {
+    id: `arsip-db-${row.id}`,
+    dbId: row.id,
+    kode: `ARS-B${row.bidang_pengampu || 1}-${row.tahun_anggaran || new Date().getFullYear()}-${row.id}`,
+    judul: row.judul_berkas_dokumen || "",
+    instansi: row.instansi_penerima || "",
+    bidangId: (Number(row.bidang_pengampu) as BidangId) || 1,
+    jenis: (row.jenis_dokumen_arsip as ArsipItem["jenis"]) || "NPHD",
+    tahun: row.tahun_anggaran ? String(row.tahun_anggaran) : new Date().getFullYear().toString(),
+    tanggal: new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
+    ukuran: "—",
+    lemariArsip: (row.lemari_arsip as LemariArsip) || "Lemari Arsip 01",
+    rakArsip: row.posisi_rak || "Rak 01",
+    nomorArsip: row.nomor_berkas_urut || "No. 01",
+    nominal: row.nominal_anggaran != null ? Number(row.nominal_anggaran) : undefined,
+    fileName: row.scan_foto || undefined,
+  };
+}
+
+export function HibahProvider({ children }: { children: React.ReactNode }) {
+  const [proposals, setProposals] = useState<ProposalItem[]>([]);
+  const [arsipList, setArsipList] = useState<ArsipItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const isOlderThan5Years = (tahunStr: string | number) => {
     const currentYear = new Date().getFullYear();
     const docYear = typeof tahunStr === "string" ? parseInt(tahunStr, 10) : tahunStr;
@@ -112,6 +151,37 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
     return currentYear - docYear >= 5;
   };
 
+  const refreshData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [hibahRes, arsipRes] = await Promise.all([
+        fetch("/api/hibah"),
+        fetch("/api/arsip"),
+      ]);
+
+      if (hibahRes.ok) {
+        const hibahJson = await hibahRes.json();
+        const mapped: ProposalItem[] = (hibahJson.data || []).map(dbRowToProposal);
+        setProposals(mapped);
+      }
+
+      if (arsipRes.ok) {
+        const arsipJson = await arsipRes.json();
+        const mapped: ArsipItem[] = (arsipJson.data || []).map(dbRowToArsip);
+        setArsipList(mapped);
+      }
+    } catch (err) {
+      console.error("Gagal mengambil data dari database:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  // Tambah Proposal Hibah -> Simpan ke data_hibah & arsip di MySQL
   const addProposal = async (
     newP: Omit<ProposalItem, "id" | "tanggal" | "tahun" | "lemariArsip" | "rakArsip" | "nomorArsip"> & {
       file?: File | null;
@@ -153,60 +223,100 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
 
     const defaultRak = newP.rakArsip || "Rak 01";
     const defaultNomor = newP.nomorArsip || `No. ${String(Math.floor(1 + Math.random() * 30)).padStart(2, "0")}`;
-
     const currentYear = new Date().getFullYear().toString();
 
-    const created: ProposalItem = {
-      id: Date.now(),
-      name: newP.name,
-      instansi: newP.instansi,
-      bidangId: newP.bidangId,
-      kategori: newP.kategori,
-      nominal: newP.nominal,
-      tanggal: new Date().toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-      tahun: currentYear,
-      lemariArsip: defaultLemari,
-      rakArsip: defaultRak,
-      nomorArsip: defaultNomor,
-      pic: newP.pic,
-      noTelp: newP.noTelp,
-      catatan: newP.catatan,
-      fileName,
-      fileSize: fileSize || "2.5 MB",
-      fileDataUrl,
-      fileType,
-    };
+    try {
+      const res = await fetch("/api/hibah", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jenis_dokume_arsip: newP.name,
+          nominal_diajukan: String(newP.nominal),
+          lembaga: newP.instansi,
+          tujuan_bidang_teknis: String(newP.bidangId),
+          lemari_arsip: defaultLemari,
+          posisi_rak: defaultRak,
+          nomor_berkas: defaultNomor,
+          kategori_program: newP.kategori,
+          nama_penanggung_jawab: newP.pic || null,
+          scan_foto: fileName || null,
+        }),
+      });
 
-    setProposals((prev) => [created, ...prev]);
+      if (res.ok) {
+        const json = await res.json();
+        const dbId = json.id;
 
-    // Otomatis buat entri di arsip dokumen
-    const newKode = `ARS-B${newP.bidangId}-${currentYear}-${Math.floor(100 + Math.random() * 900)}`;
-    const newArsipItem: ArsipItem = {
-      id: `arsip-auto-${created.id}`,
-      kode: newKode,
-      judul: `Proposal & Berkas Hibah: ${newP.name}`,
-      instansi: newP.instansi,
-      bidangId: newP.bidangId,
-      jenis: "Proposal & RAB",
-      tahun: currentYear,
-      tanggal: created.tanggal,
-      ukuran: created.fileSize || "3.5 MB",
-      lemariArsip: defaultLemari,
-      rakArsip: defaultRak,
-      nomorArsip: defaultNomor,
-      nominal: newP.nominal,
-      pic: newP.pic,
-      noTelp: newP.noTelp,
-      fileName: fileName || `Proposal_${newP.name.replace(/\s+/g, "_")}.pdf`,
-      fileDataUrl,
-      fileType,
-    };
+        const created: ProposalItem = {
+          id: dbId,
+          dbId,
+          name: newP.name,
+          instansi: newP.instansi,
+          bidangId: newP.bidangId,
+          kategori: newP.kategori,
+          nominal: newP.nominal,
+          tanggal: new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
+          tahun: currentYear,
+          lemariArsip: defaultLemari,
+          rakArsip: defaultRak,
+          nomorArsip: defaultNomor,
+          pic: newP.pic,
+          noTelp: newP.noTelp,
+          catatan: newP.catatan,
+          fileName,
+          fileSize: fileSize || "—",
+          fileDataUrl,
+          fileType,
+        };
+        setProposals((prev) => [created, ...prev]);
 
-    setArsipList((arsipPrev) => [newArsipItem, ...arsipPrev]);
+        // Simpan juga ke arsip digital
+        const arsipRes = await fetch("/api/arsip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jenis_dokumen_arsip: "Proposal & RAB",
+            judul_berkas_dokumen: `Proposal & Berkas Hibah: ${newP.name}`,
+            nominal_anggaran: newP.nominal,
+            lemari_arsip: defaultLemari,
+            posisi_rak: defaultRak,
+            nomor_berkas_urut: defaultNomor,
+            instansi_penerima: newP.instansi,
+            bidang_pengampu: String(newP.bidangId),
+            tahun_anggaran: currentYear,
+            scan_foto: fileName || null,
+          }),
+        });
+
+        if (arsipRes.ok) {
+          const arsipJson = await arsipRes.json();
+          const newArsipItem: ArsipItem = {
+            id: `arsip-db-${arsipJson.id}`,
+            dbId: arsipJson.id,
+            kode: `ARS-B${newP.bidangId}-${currentYear}-${arsipJson.id}`,
+            judul: `Proposal & Berkas Hibah: ${newP.name}`,
+            instansi: newP.instansi,
+            bidangId: newP.bidangId,
+            jenis: "Proposal & RAB",
+            tahun: currentYear,
+            tanggal: created.tanggal,
+            ukuran: fileSize || "—",
+            lemariArsip: defaultLemari,
+            rakArsip: defaultRak,
+            nomorArsip: defaultNomor,
+            nominal: newP.nominal,
+            pic: newP.pic,
+            noTelp: newP.noTelp,
+            fileName: fileName || `Proposal_${newP.name.replace(/\s+/g, "_")}.pdf`,
+            fileDataUrl,
+            fileType,
+          };
+          setArsipList((arsipPrev) => [newArsipItem, ...arsipPrev]);
+        }
+      }
+    } catch (err) {
+      console.error("Error simpan proposal:", err);
+    }
   };
 
   const updateProposalLokasi = (
@@ -229,24 +339,111 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
       })
     );
 
-    // Sync dengan arsip jika ada
-    setArsipList((arsipPrev) =>
-      arsipPrev.map((item) => {
-        if (item.id === `arsip-auto-${id}`) {
-          return {
-            ...item,
-            lemariArsip: newLemari,
-            ...(newRak !== undefined ? { rakArsip: newRak } : {}),
-            ...(newNomor !== undefined ? { nomorArsip: newNomor } : {}),
-          };
-        }
-        return item;
-      })
-    );
+    const proposal = proposals.find((p) => p.id === id);
+    if (proposal) {
+      fetch("/api/hibah", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: proposal.dbId || id,
+          lemari_arsip: newLemari,
+          posisi_rak: newRak || proposal.rakArsip,
+          nomor_berkas: newNomor || proposal.nomorArsip,
+          jenis_dokume_arsip: proposal.name,
+          nominal_diajukan: String(proposal.nominal),
+          lembaga: proposal.instansi,
+          tujuan_bidang_teknis: String(proposal.bidangId),
+          kategori_program: proposal.kategori,
+          nama_penanggung_jawab: proposal.pic,
+        }),
+      }).catch((err) => console.error("Gagal update lokasi hibah:", err));
+    }
   };
 
   const updateProposalLemari = (id: number, newLemari: LemariArsip) => {
     updateProposalLokasi(id, newLemari);
+  };
+
+  const updateProposal = async (
+    id: number,
+    updates: Partial<Pick<ProposalItem, "name" | "instansi" | "kategori" | "nominal" | "lemariArsip" | "rakArsip" | "nomorArsip" | "pic" | "noTelp" | "catatan">>
+  ) => {
+    setProposals((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    );
+
+    const proposal = proposals.find((p) => p.id === id);
+    if (proposal) {
+      const merged = { ...proposal, ...updates };
+      try {
+        await fetch("/api/hibah", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: merged.dbId || id,
+            jenis_dokume_arsip: merged.name,
+            nominal_diajukan: String(merged.nominal),
+            lembaga: merged.instansi,
+            tujuan_bidang_teknis: String(merged.bidangId),
+            lemari_arsip: merged.lemariArsip,
+            posisi_rak: merged.rakArsip,
+            nomor_berkas: merged.nomorArsip,
+            kategori_program: merged.kategori,
+            nama_penanggung_jawab: merged.pic,
+          }),
+        });
+      } catch (err) {
+        console.error("Gagal update hibah ke DB:", err);
+      }
+    }
+  };
+
+  // Hapus proposal dari tabel data_hibah di MySQL
+  const deleteProposal = async (id: number) => {
+    const proposal = proposals.find((p) => p.id === id);
+    const dbId = proposal?.dbId || id;
+
+    setProposals((prev) => prev.filter((p) => p.id !== id));
+
+    try {
+      await fetch(`/api/hibah?id=${dbId}`, { method: "DELETE" });
+    } catch (err) {
+      console.error("Gagal hapus hibah dari DB:", err);
+    }
+  };
+
+  // Tambah arsip mandiri ke tabel arsip di MySQL
+  const addArsip = async (newItem: Omit<ArsipItem, "id">) => {
+    try {
+      const res = await fetch("/api/arsip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jenis_dokumen_arsip: newItem.jenis,
+          judul_berkas_dokumen: newItem.judul,
+          nominal_anggaran: newItem.nominal || null,
+          lemari_arsip: newItem.lemariArsip,
+          posisi_rak: newItem.rakArsip || null,
+          nomor_berkas_urut: newItem.nomorArsip || null,
+          instansi_penerima: newItem.instansi,
+          bidang_pengampu: String(newItem.bidangId),
+          tahun_anggaran: newItem.tahun,
+          scan_foto: newItem.fileName || null,
+        }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const created: ArsipItem = {
+          ...newItem,
+          id: `arsip-db-${json.id}`,
+          dbId: json.id,
+        };
+        setArsipList((prev) => [created, ...prev]);
+      }
+    } catch (err) {
+      console.error("Gagal simpan arsip ke DB:", err);
+    }
   };
 
   const updateArsipLokasi = (
@@ -268,32 +465,42 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
         return item;
       })
     );
+
+    const arsip = arsipList.find((a) => a.id === id);
+    if (arsip?.dbId) {
+      fetch("/api/arsip", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: arsip.dbId,
+          lemari_arsip: newLemari,
+          posisi_rak: newRak,
+          nomor_berkas_urut: newNomor,
+          jenis_dokumen_arsip: arsip.jenis,
+          judul_berkas_dokumen: arsip.judul,
+          nominal_anggaran: arsip.nominal,
+          instansi_penerima: arsip.instansi,
+          bidang_pengampu: String(arsip.bidangId),
+          tahun_anggaran: arsip.tahun,
+        }),
+      }).catch((err) => console.error("Gagal update lokasi arsip:", err));
+    }
   };
 
-  const updateProposal = (
-    id: number,
-    updates: Partial<Pick<ProposalItem, "name" | "instansi" | "kategori" | "nominal" | "lemariArsip" | "rakArsip" | "nomorArsip" | "pic" | "noTelp" | "catatan">>
-  ) => {
-    setProposals((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
-    );
-  };
+  // Hapus arsip dari tabel arsip di MySQL
+  const deleteArsip = async (id: string) => {
+    const arsip = arsipList.find((a) => a.id === id);
+    const dbId = arsip?.dbId || parseInt(id.replace(/\D/g, ""), 10);
 
-  const deleteProposal = (id: number) => {
-    setProposals((prev) => prev.filter((p) => p.id !== id));
-    setArsipList((prev) => prev.filter((a) => a.id !== `arsip-auto-${id}`));
-  };
-
-  const addArsip = (newItem: Omit<ArsipItem, "id">) => {
-    const created: ArsipItem = {
-      ...newItem,
-      id: `arsip-${Date.now()}`,
-    };
-    setArsipList((prev) => [created, ...prev]);
-  };
-
-  const deleteArsip = (id: string) => {
     setArsipList((prev) => prev.filter((a) => a.id !== id));
+
+    if (dbId && !isNaN(dbId)) {
+      try {
+        await fetch(`/api/arsip?id=${dbId}`, { method: "DELETE" });
+      } catch (err) {
+        console.error("Gagal hapus arsip dari DB:", err);
+      }
+    }
   };
 
   return (
@@ -301,6 +508,7 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
       value={{
         proposals,
         arsipList,
+        isLoading,
         addProposal,
         updateProposalLemari,
         updateProposalLokasi,
@@ -310,6 +518,7 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
         updateArsipLokasi,
         deleteArsip,
         isOlderThan5Years,
+        refreshData,
       }}
     >
       {children}

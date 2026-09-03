@@ -23,6 +23,7 @@ import {
   TrashIcon,
   XIcon,
 } from "./icons";
+import DeleteConfirmModal from "./delete-confirm-modal";
 
 const lemariFilterList = [
   "Semua",
@@ -39,6 +40,7 @@ export default function HibahTable() {
   const { mode, bidangId } = useMode();
   const {
     proposals,
+    isLoading,
     addProposal,
     updateProposal,
     updateProposalLokasi,
@@ -54,6 +56,7 @@ export default function HibahTable() {
   // Auto-hide documents older than 5 years (permanent — only Arsip Hibah can show these)
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ProposalItem | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editInstansi, setEditInstansi] = useState("");
@@ -351,33 +354,34 @@ export default function HibahTable() {
                           <span>Detail</span>
                         </button>
 
-                        {mode === "admin" && (
-                          <button
-                            onClick={() => {
-                              if (confirm(`Yakin ingin menghapus berkas usulan "${p.name}"?`)) {
-                                deleteProposal(p.id);
-                                showToast(`Berkas "${p.name}" berhasil dihapus.`);
-                              }
-                            }}
-                            className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"
-                            title="Hapus Usulan"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => setDeleteTarget(p)}
+                          className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"
+                          title="Hapus Usulan dari Database"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 );
               })}
 
-              {filtered.length === 0 && (
+              {isLoading ? (
                 <tr>
                   <td colSpan={7} className="px-5 py-12 text-center text-xs text-zinc-400">
-                    Tidak ada data usulan hibah yang sesuai kriteria pencarian.
+                    Memuat data usulan hibah dari database...
                   </td>
                 </tr>
-              )}
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center text-xs text-zinc-400">
+                    {proposals.length === 0
+                      ? "Belum ada data usulan hibah di database. Silakan klik 'Tambah Usulan Hibah'."
+                      : "Tidak ada data usulan hibah yang sesuai kriteria pencarian."}
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
@@ -1050,17 +1054,45 @@ export default function HibahTable() {
                 <span>Unduh Berkas Asli</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => { setSelectedProposal(null); setIsEditing(false); }}
-                className="rounded-xl bg-zinc-900 px-5 py-2 text-xs font-bold text-white hover:bg-zinc-800"
-              >
-                Tutup
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(selectedProposal)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
+                  title="Hapus Usulan dari Database"
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                  <span>Hapus Berkas</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedProposal(null); setIsEditing(false); }}
+                  className="rounded-xl bg-zinc-900 px-5 py-2 text-xs font-bold text-white hover:bg-zinc-800"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        itemName={deleteTarget?.name || ""}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteProposal(deleteTarget.id);
+            showToast(`Berkas "${deleteTarget.name}" berhasil dihapus dari database.`);
+            if (selectedProposal?.id === deleteTarget.id) {
+              setSelectedProposal(null);
+              setIsEditing(false);
+            }
+          }
+        }}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

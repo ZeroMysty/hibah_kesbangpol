@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import StatusBadge from "./status-badge";
 import {
   MailIcon,
@@ -10,6 +10,7 @@ import {
   UserPlusIcon,
   XIcon,
 } from "./icons";
+import DeleteConfirmModal from "./delete-confirm-modal";
 
 type User = {
   id: number;
@@ -18,33 +19,81 @@ type User = {
   roleGroup: "Admin" | "Bidang 1" | "Bidang 2" | "Bidang 3" | "Bidang 4";
   roleTitle: string;
   status: string;
-  lastActive: string;
   initials: string;
   gradient: string;
 };
 
-const users: User[] = [
-  { id: 1, name: "Admin Kesbangpol", email: "admin@kesbangpol.go.id", roleGroup: "Admin", roleTitle: "Administrator Utama", status: "Aktif", lastActive: "Baru saja", initials: "AD", gradient: "from-emerald-500 to-teal-600" },
-  { id: 2, name: "Staff Verifikator Bidang 1", email: "bidang1@kesbangpol.go.id", roleGroup: "Bidang 1", roleTitle: "Tim Evaluator Ideologi & Wasbang", status: "Aktif", lastActive: "5 menit lalu", initials: "B1", gradient: "from-blue-600 to-indigo-700" },
-  { id: 3, name: "Staff Verifikator Bidang 2", email: "bidang2@kesbangpol.go.id", roleGroup: "Bidang 2", roleTitle: "Tim Evaluator Poldagri & Ormas", status: "Aktif", lastActive: "12 menit lalu", initials: "B2", gradient: "from-red-600 to-rose-700" },
-  { id: 4, name: "Staff Verifikator Bidang 3", email: "bidang3@kesbangpol.go.id", roleGroup: "Bidang 3", roleTitle: "Tim Evaluator Ekososbud & Agama", status: "Aktif", lastActive: "1 jam lalu", initials: "B3", gradient: "from-amber-500 to-orange-600" },
-  { id: 5, name: "Staff Verifikator Bidang 4", email: "bidang4@kesbangpol.go.id", roleGroup: "Bidang 4", roleTitle: "Tim Evaluator Kewaspadaan Nasional", status: "Aktif", lastActive: "30 menit lalu", initials: "B4", gradient: "from-purple-600 to-indigo-800" },
-];
-
 const roles = ["Semua", "Admin", "Bidang 1", "Bidang 2", "Bidang 3", "Bidang 4"];
 
+const gradientMap: Record<string, string> = {
+  Admin: "from-emerald-500 to-teal-600",
+  "Bidang 1": "from-blue-600 to-indigo-700",
+  "Bidang 2": "from-red-600 to-rose-700",
+  "Bidang 3": "from-amber-500 to-orange-600",
+  "Bidang 4": "from-purple-600 to-indigo-800",
+};
+
+function dbRowToUser(row: any): User {
+  const roleGroup = (row.peran as User["roleGroup"]) || "Admin";
+  const name = row.nama_pengguna || "";
+  const initials = name
+    .split(" ")
+    .map((w: string) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return {
+    id: row.id,
+    name,
+    email: row.email || "",
+    roleGroup,
+    roleTitle: row.jabatan || `Staff ${roleGroup}`,
+    status: row.status || "Aktif",
+    initials,
+    gradient: gradientMap[roleGroup] || "from-zinc-500 to-zinc-700",
+  };
+}
+
 export default function UserTable() {
-  const [userList, setUserList] = useState<User[]>(users);
+  const [userList, setUserList] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("Semua");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Form states for New User
+  // Form states untuk pengguna baru
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newRoleGroup, setNewRoleGroup] = useState<User["roleGroup"]>("Admin");
   const [newRoleTitle, setNewRoleTitle] = useState("");
   const [newStatus, setNewStatus] = useState("Aktif");
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/pengguna");
+      if (res.ok) {
+        const json = await res.json();
+        setUserList((json.data || []).map(dbRowToUser));
+      }
+    } catch (err) {
+      console.error("Gagal mengambil data pengguna dari DB:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const filtered = userList.filter((u) => {
     const matchesQuery =
@@ -55,50 +104,131 @@ export default function UserTable() {
     return matchesQuery && matchesRole;
   });
 
-  const handleAddUser = (e: React.FormEvent) => {
+  // Tambah akun pengguna -> Simpan ke tabel pengguna di MySQL
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newEmail.trim()) return;
 
-    const initials = newName
-      .split(" ")
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
+    try {
+      const res = await fetch("/api/pengguna", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama_pengguna: newName.trim(),
+          email: newEmail.trim(),
+          peran: newRoleGroup,
+          status: newStatus,
+          jabatan: newRoleTitle.trim() || `Staff Verifikator ${newRoleGroup}`,
+        }),
+      });
 
-    const gradientMap: Record<User["roleGroup"], string> = {
-      Admin: "from-emerald-500 to-teal-600",
-      "Bidang 1": "from-blue-600 to-indigo-700",
-      "Bidang 2": "from-red-600 to-rose-700",
-      "Bidang 3": "from-amber-500 to-orange-600",
-      "Bidang 4": "from-purple-600 to-indigo-800",
-    };
+      if (res.ok) {
+        const json = await res.json();
+        const initials = newName
+          .split(" ")
+          .map((w) => w[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase();
 
-    const newUser: User = {
-      id: Date.now(),
-      name: newName,
-      email: newEmail,
-      roleGroup: newRoleGroup,
-      roleTitle: newRoleTitle || `Staff Verifikator ${newRoleGroup}`,
-      status: newStatus,
-      lastActive: "Baru dibuat",
-      initials,
-      gradient: gradientMap[newRoleGroup],
-    };
+        const newUser: User = {
+          id: json.id,
+          name: newName.trim(),
+          email: newEmail.trim(),
+          roleGroup: newRoleGroup,
+          roleTitle: newRoleTitle.trim() || `Staff Verifikator ${newRoleGroup}`,
+          status: newStatus,
+          initials,
+          gradient: gradientMap[newRoleGroup],
+        };
 
-    setUserList([newUser, ...userList]);
-    setShowAddModal(false);
+        setUserList([newUser, ...userList]);
+        setShowAddModal(false);
+        showToast(`Pengguna "${newName}" berhasil ditambahkan ke database.`);
 
-    // Reset Form
-    setNewName("");
-    setNewEmail("");
-    setNewRoleTitle("");
+        setNewName("");
+        setNewEmail("");
+        setNewRoleTitle("");
+        setNewStatus("Aktif");
+      } else {
+        const err = await res.json();
+        alert(`Gagal menambahkan pengguna: ${err.error}`);
+      }
+    } catch (err) {
+      console.error("Gagal simpan pengguna:", err);
+    }
   };
 
-  const roleCount = (r: string) => (r === "Semua" ? userList.length : userList.filter((u) => u.roleGroup === r).length);
+  // Edit jabatan pengguna -> Update ke tabel pengguna di MySQL
+  const handleEditJabatan = async (u: User) => {
+    const newTitle = prompt(`Ubah jabatan untuk ${u.name}:`, u.roleTitle);
+    if (!newTitle) return;
+
+    try {
+      const res = await fetch("/api/pengguna", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: u.id,
+          nama_pengguna: u.name,
+          email: u.email,
+          peran: u.roleGroup,
+          status: u.status,
+          jabatan: newTitle.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        setUserList(
+          userList.map((item) =>
+            item.id === u.id ? { ...item, roleTitle: newTitle.trim() } : item
+          )
+        );
+        showToast(`Jabatan "${u.name}" berhasil diperbarui di database.`);
+      } else {
+        alert("Gagal memperbarui jabatan.");
+      }
+    } catch (err) {
+      console.error("Gagal update jabatan:", err);
+    }
+  };
+
+  // Hapus pengguna -> Hapus dari tabel pengguna di MySQL
+  const executeDeleteUser = async (u: User) => {
+    try {
+      const res = await fetch(`/api/pengguna?id=${u.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setUserList((prev) => prev.filter((item) => item.id !== u.id));
+        showToast(`Akun "${u.name}" berhasil dihapus dari database.`);
+      } else {
+        alert("Gagal menghapus pengguna dari database.");
+      }
+    } catch (err) {
+      console.error("Gagal hapus pengguna:", err);
+    }
+  };
+
+  const roleCount = (r: string) =>
+    r === "Semua" ? userList.length : userList.filter((u) => u.roleGroup === r).length;
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-zinc-900 px-5 py-3.5 text-xs font-semibold text-white shadow-2xl animate-fade-in">
+          <span>{toastMessage}</span>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="ml-2 text-zinc-400 hover:text-white"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Filter Toolbar */}
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
         <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Filter:</span>
@@ -113,13 +243,15 @@ export default function UserTable() {
           >
             {roles.map((r) => (
               <option key={r} value={r}>
-                {r === "Semua" ? `Semua Pengguna (${users.length})` : `${r} (${roleCount(r)})`}
+                {r === "Semua"
+                  ? `Semua Pengguna (${userList.length})`
+                  : `${r} (${roleCount(r)})`}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Search & Actions on Right */}
+        {/* Search & Add */}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -152,85 +284,83 @@ export default function UserTable() {
                 <th className="px-5 py-3 font-semibold">Kelompok Peran</th>
                 <th className="px-5 py-3 font-semibold">Jabatan / Keterangan</th>
                 <th className="px-5 py-3 font-semibold">Status</th>
-                <th className="px-5 py-3 font-semibold">Terakhir Aktif</th>
                 <th className="px-5 py-3 text-right font-semibold">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u) => (
-                <tr
-                  key={u.id}
-                  className="border-b border-zinc-50 transition-colors last:border-0 hover:bg-zinc-50/70"
-                >
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${u.gradient} text-xs font-bold text-white shadow-sm`}
-                      >
-                        {u.initials}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate font-bold text-zinc-900">{u.name}</p>
-                        <p className="flex items-center gap-1 truncate text-xs text-zinc-500">
-                          <MailIcon className="h-3 w-3 shrink-0" />
-                          {u.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        u.roleGroup === "Admin"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : u.roleGroup.startsWith("Bidang")
-                          ? "bg-red-50 text-red-700 border border-red-200"
-                          : "bg-purple-50 text-purple-700 border border-purple-200"
-                      }`}
-                    >
-                      {u.roleGroup}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-xs text-zinc-600">{u.roleTitle}</td>
-                  <td className="px-5 py-4">
-                    <StatusBadge status={u.status} />
-                  </td>
-                  <td className="px-5 py-4 text-xs text-zinc-500">{u.lastActive}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => {
-                          const newTitle = prompt(`Ubah jabatan untuk ${u.name}:`, u.roleTitle);
-                          if (newTitle) {
-                            setUserList(userList.map((item) => item.id === u.id ? { ...item, roleTitle: newTitle } : item));
-                          }
-                        }}
-                        className="rounded-lg p-1.5 text-zinc-400 hover:bg-amber-50 hover:text-amber-600"
-                        title="Edit Akun"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Yakin ingin menghapus akun ${u.name}?`)) {
-                            setUserList(userList.filter((item) => item.id !== u.id));
-                          }
-                        }}
-                        className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600"
-                        title="Hapus Akun"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+              {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-sm text-zinc-400">
-                    Tidak ada akun pengguna yang cocok dengan kriteria pencarian.
+                  <td colSpan={5} className="px-5 py-12 text-center text-xs text-zinc-400">
+                    Memuat data pengguna dari database...
                   </td>
                 </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-12 text-center text-sm text-zinc-400">
+                    {userList.length === 0
+                      ? "Belum ada data pengguna di database. Silakan klik 'Tambah Pengguna'."
+                      : "Tidak ada akun pengguna yang cocok dengan kriteria pencarian."}
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((u) => (
+                  <tr
+                    key={u.id}
+                    className="border-b border-zinc-50 transition-colors last:border-0 hover:bg-zinc-50/70"
+                  >
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${u.gradient} text-xs font-bold text-white shadow-sm`}
+                        >
+                          {u.initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate font-bold text-zinc-900">{u.name}</p>
+                          <p className="flex items-center gap-1 truncate text-xs text-zinc-500">
+                            <MailIcon className="h-3 w-3 shrink-0" />
+                            {u.email}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          u.roleGroup === "Admin"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : u.roleGroup.startsWith("Bidang")
+                            ? "bg-red-50 text-red-700 border border-red-200"
+                            : "bg-purple-50 text-purple-700 border border-purple-200"
+                        }`}
+                      >
+                        {u.roleGroup}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-xs text-zinc-600">{u.roleTitle}</td>
+                    <td className="px-5 py-4">
+                      <StatusBadge status={u.status} />
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleEditJabatan(u)}
+                          className="rounded-lg p-1.5 text-zinc-400 hover:bg-amber-50 hover:text-amber-600"
+                          title="Edit Jabatan"
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(u)}
+                          className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                          title="Hapus Akun"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -356,6 +486,18 @@ export default function UserTable() {
           </div>
         </div>
       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        itemName={deleteTarget?.name || ""}
+        onConfirm={() => {
+          if (deleteTarget) {
+            executeDeleteUser(deleteTarget);
+          }
+        }}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

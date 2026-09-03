@@ -22,6 +22,7 @@ import {
   TrashIcon,
   XIcon,
 } from "./icons";
+import DeleteConfirmModal from "./delete-confirm-modal";
 
 const jenisList = [
   "Semua",
@@ -57,7 +58,7 @@ const tahunList = [
 
 export default function ArsipTable() {
   const { mode, bidangId } = useMode();
-  const { arsipList, addArsip, updateArsipLokasi, deleteArsip, isOlderThan5Years } = useHibah();
+  const { arsipList, isLoading, addArsip, updateArsipLokasi, deleteArsip, isOlderThan5Years } = useHibah();
 
   const [query, setQuery] = useState("");
   const [selectedJenis, setSelectedJenis] = useState("Semua");
@@ -70,6 +71,13 @@ export default function ArsipTable() {
   const [showOlderDocs, setShowOlderDocs] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<ArsipItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ArsipItem | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
 
   // Form New Archive State with Complete Metadata
   const [newKode, setNewKode] = useState(
@@ -176,7 +184,7 @@ export default function ArsipTable() {
       year: "numeric",
     });
 
-    addArsip({
+    await addArsip({
       kode:
         newKode ||
         `ARS-B${newBidang}-${newTahun}-${Math.floor(100 + Math.random() * 900)}`,
@@ -520,39 +528,40 @@ export default function ArsipTable() {
                           <span>Detail</span>
                         </button>
 
-                        {mode === "admin" && (
-                          <button
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  `Yakin ingin menghapus arsip "${item.judul}"?`
-                                )
-                              ) {
-                                deleteArsip(item.id);
-                              }
-                            }}
-                            className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                            title="Hapus Arsip"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => setDeleteTarget(item)}
+                          className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                          title="Hapus Arsip dari Database"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 );
               })}
 
-              {filteredArsip.length === 0 && (
+              {isLoading ? (
                 <tr>
                   <td
                     colSpan={8}
                     className="px-5 py-16 text-center text-sm text-zinc-400"
                   >
-                    Tidak ada berkas arsip yang sesuai dengan kriteria pencarian.
+                    Memuat berkas arsip dari database...
                   </td>
                 </tr>
-              )}
+              ) : filteredArsip.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-5 py-16 text-center text-sm text-zinc-400"
+                  >
+                    {arsipList.length === 0
+                      ? "Belum ada berkas arsip di database. Silakan klik 'Arsipkan Berkas Baru'."
+                      : "Tidak ada berkas arsip yang sesuai dengan kriteria pencarian."}
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
@@ -1147,17 +1156,57 @@ export default function ArsipTable() {
                 <span>Unduh Dokumen Arsip</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => setSelectedDetail(null)}
-                className="rounded-xl bg-zinc-900 px-5 py-2 text-xs font-bold text-white hover:bg-zinc-800"
-              >
-                Tutup
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(selectedDetail)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
+                  title="Hapus Arsip dari Database"
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                  <span>Hapus Arsip</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDetail(null)}
+                  className="rounded-xl bg-zinc-900 px-5 py-2 text-xs font-bold text-white hover:bg-zinc-800"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-zinc-900 px-5 py-3.5 text-xs font-semibold text-white shadow-2xl animate-fade-in">
+          <span>{toastMessage}</span>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="ml-2 text-zinc-400 hover:text-white"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        itemName={deleteTarget?.judul || ""}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteArsip(deleteTarget.id);
+            showToast(`Arsip "${deleteTarget.judul}" berhasil dihapus dari database.`);
+            if (selectedDetail?.id === deleteTarget.id) {
+              setSelectedDetail(null);
+            }
+          }
+        }}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
