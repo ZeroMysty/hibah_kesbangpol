@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useMode } from "@/context/mode-context";
 import {
   BellIcon,
   LockIcon,
@@ -12,7 +13,7 @@ import {
 
 type Tab = "profil" | "keamanan" | "notifikasi";
 
-const tabs: { id: Tab; label: string; icon: (p: { className?: string }) => React.ReactNode }[] = [
+const allTabs: { id: Tab; label: string; icon: (p: { className?: string }) => React.ReactNode }[] = [
   { id: "profil", label: "Profil Organisasi", icon: UsersIcon },
   { id: "keamanan", label: "Keamanan", icon: LockIcon },
   { id: "notifikasi", label: "Notifikasi", icon: BellIcon },
@@ -69,7 +70,10 @@ const inputClass =
 const labelClass = "mb-1.5 block text-sm font-medium text-zinc-700";
 
 export default function SettingsPanel() {
+  const { mode } = useMode();
   const [tab, setTab] = useState<Tab>("profil");
+
+  const tabs = mode === "bidang" ? allTabs.filter((t) => t.id !== "notifikasi") : allTabs;
 
   return (
     <div className="space-y-6">
