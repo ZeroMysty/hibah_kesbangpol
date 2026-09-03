@@ -309,56 +309,7 @@ interface LembagaItem {
   tahun?: string;
 }
 
-const mockLembaga: LembagaItem[] = [
-  {
-    id: "1",
-    nama: "Forum Kerukunan Umat Beragama (FKUB) Kota",
-    singkatan: "FKUB",
-    bidangId: 3,
-    jenisOrganisasi: "Forum Kemitraan - FKUB (Kerukunan Umat Beragama)",
-    alamat: "Jl. Wastukencana No. 2, Babakan Ciamis, Kota Bandung",
-    pic: "Drs. H. Ahmad Fauzi, M.Ag",
-    noTelp: "0812-3456-7890",
-    status: "Sedang Mengajukan",
-    tahun: "2026",
-  },
-  {
-    id: "2",
-    nama: "Forum Pembauran Kebangsaan (FPK)",
-    singkatan: "FPK",
-    bidangId: 1,
-    jenisOrganisasi: "Forum Kemitraan - FPK (Forum Pembauran Kebangsaan)",
-    alamat: "Jl. Aceh No. 36, Merdeka, Kota Bandung",
-    pic: "Prof. Dr. I Wayan Sudarta",
-    noTelp: "0813-8899-1122",
-    status: "Sedang Mengajukan",
-    tahun: "2026",
-  },
-  {
-    id: "3",
-    nama: "Forum Kewaspadaan Dini Masyarakat (FKDM)",
-    singkatan: "FKDM",
-    bidangId: 4,
-    jenisOrganisasi: "Forum Kemitraan - FKDM (Kewaspadaan Dini)",
-    alamat: "Gedung Kesbangpol Lt. 2, Kota Bandung",
-    pic: "Kolonel (Purn) Hendra S.",
-    noTelp: "0811-2233-4455",
-    status: "Terakhir Mengajukan",
-    tahun: "2025",
-  },
-  {
-    id: "4",
-    nama: "Himpunan Mahasiswa Islam (HMI) Cabang",
-    singkatan: "HMI",
-    bidangId: 1,
-    jenisOrganisasi: "Organisasi Kepemudaan (OKP) & Kemahasiswaan",
-    alamat: "Jl. Dago No. 88, Coblong, Kota Bandung",
-    pic: "Rizky Ramadhan, S.IP",
-    noTelp: "0821-9988-7766",
-    status: "Sedang Mengajukan",
-    tahun: "2026",
-  },
-];
+const mockLembaga: LembagaItem[] = [];
 
 export default function LembagaPage() {
   const { mode, bidangId } = useMode();

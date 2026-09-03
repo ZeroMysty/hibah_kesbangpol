@@ -7,26 +7,12 @@ import Navbar from "./navbar";
 import { BellIcon, MenuIcon, SearchIcon, LogoutIcon } from "./icons";
 import { useMode } from "@/context/mode-context";
 
-const notifications = [
-  {
-    title: "Proposal baru masuk",
-    desc: "Revitalisasi Taman Budaya diajukan oleh Dinas Kebudayaan.",
-    time: "5 menit lalu",
-    unread: true,
-  },
-  {
-    title: "Pencairan dana disetujui",
-    desc: "Hibah FKUB Kota sebesar Rp85.000.000 telah dicairkan.",
-    time: "1 jam lalu",
-    unread: true,
-  },
-  {
-    title: "Laporan bulanan siap",
-    desc: "Laporan realisasi hibah bulan Juli telah dibuat otomatis.",
-    time: "3 jam lalu",
-    unread: false,
-  },
-];
+const notifications: {
+  title: string;
+  desc: string;
+  time: string;
+  unread: boolean;
+}[] = [];
 
 export default function DashboardShell({
   children,
@@ -130,10 +116,12 @@ export default function DashboardShell({
                 aria-expanded={notifOpen}
               >
                 <BellIcon className="h-5 w-5" />
-                <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-                </span>
+                {notifications.some((n) => n.unread) && (
+                  <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                  </span>
+                )}
               </button>
 
               {notifOpen && (
@@ -150,35 +138,45 @@ export default function DashboardShell({
                   >
                     <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
                       <p className="text-sm font-semibold">Notifikasi</p>
-                      <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
-                        {notifications.filter((n) => n.unread).length} baru
-                      </span>
+                      {notifications.filter((n) => n.unread).length > 0 ? (
+                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
+                          {notifications.filter((n) => n.unread).length} baru
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-zinc-400">0 baru</span>
+                      )}
                     </div>
-                    <ul className="max-h-80 overflow-y-auto">
-                      {notifications.map((n) => (
-                        <li
-                          key={n.title}
-                          className={`flex gap-3 border-b border-zinc-50 px-4 py-3 transition-colors hover:bg-zinc-50 last:border-0 ${
-                            n.unread ? "bg-red-50/50" : ""
-                          }`}
-                        >
-                          <span
-                            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                              n.unread ? "bg-red-500" : "bg-zinc-300"
+                    {notifications.length > 0 ? (
+                      <ul className="max-h-80 overflow-y-auto">
+                        {notifications.map((n) => (
+                          <li
+                            key={n.title}
+                            className={`flex gap-3 border-b border-zinc-50 px-4 py-3 transition-colors hover:bg-zinc-50 last:border-0 ${
+                              n.unread ? "bg-red-50/50" : ""
                             }`}
-                          />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-zinc-900">
-                              {n.title}
-                            </p>
-                            <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
-                              {n.desc}
-                            </p>
-                            <p className="mt-1 text-[11px] text-zinc-400">{n.time}</p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                          >
+                            <span
+                              className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                                n.unread ? "bg-red-500" : "bg-zinc-300"
+                              }`}
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-zinc-900">
+                                {n.title}
+                              </p>
+                              <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
+                                {n.desc}
+                              </p>
+                              <p className="mt-1 text-[11px] text-zinc-400">{n.time}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="p-8 text-center text-xs text-zinc-400">
+                        Tidak ada notifikasi baru saat ini.
+                      </div>
+                    )}
                   </div>
                 </>
               )}
