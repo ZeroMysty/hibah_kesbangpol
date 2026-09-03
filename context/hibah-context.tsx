@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState } from "react";
 import { BidangId } from "./mode-context";
-
 export type LemariArsip =
   | "Lemari Arsip 01"
   | "Lemari Arsip 02"
