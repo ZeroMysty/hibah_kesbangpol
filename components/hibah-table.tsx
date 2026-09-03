@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
+import { useNotifications } from "@/context/notification-context";
 import {
   useHibah,
   ProposalItem,
@@ -38,6 +39,7 @@ const formatRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 
 export default function HibahTable() {
   const { mode, bidangId } = useMode();
+  const { addNotification } = useNotifications();
   const {
     proposals,
     isLoading,
@@ -145,6 +147,14 @@ export default function HibahTable() {
       pic: newPic,
       noTelp: newNoTelp,
       file: newFile,
+    });
+
+    // Catat ke Laporan (khusus admin) bahwa ada usulan hibah baru dari bidang ini.
+    addNotification({
+      type: "hibah",
+      bidangId: newBidangId,
+      bidangNama: bidangInfo[newBidangId].shortName,
+      message: `Usulan hibah baru: "${newName}" dari ${newInstansi}`,
     });
 
     setIsSubmitting(false);
