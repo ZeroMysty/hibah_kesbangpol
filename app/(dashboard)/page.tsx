@@ -1,222 +1,95 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
+import { useHibah, LEMARI_OPTIONS } from "@/context/hibah-context";
 import {
   ArchiveIcon,
   BuildingIcon,
-  ChartIcon,
-  CheckCircleIcon,
   ChevronRightIcon,
-  ClockIcon,
   DocumentIcon,
-  DownloadIcon,
   EyeIcon,
-  FileCheckIcon,
   FolderIcon,
   MoneyIcon,
   PlusIcon,
-  TrendDownIcon,
   TrendUpIcon,
 } from "@/components/icons";
-import CurrentDate from "@/components/current-date";
-import StatusBadge, { RetentionBadge, LokasiArsipBadge } from "@/components/status-badge";
+import { LokasiArsipBadge } from "@/components/status-badge";
 
-// ---------- Mock Data ----------
-
-const adminStats = [
-  {
-    label: "Total Dokumen Hibah",
-    value: "1.248",
-    delta: "+12,5%",
-    up: true,
-    icon: DocumentIcon,
-    accent: "bg-red-500",
-    iconBg: "bg-red-50 text-red-600",
-  },
-  {
-    label: "Dana Tersalurkan",
-    value: "Rp 4,2 M",
-    delta: "+8,2%",
-    up: true,
-    icon: MoneyIcon,
-    accent: "bg-emerald-500",
-    iconBg: "bg-emerald-50 text-emerald-600",
-  },
-  {
-    label: "Lemari Arsip Aktif",
-    value: "5 Lemari",
-    delta: "100% Terisi",
-    up: true,
-    icon: ArchiveIcon,
-    accent: "bg-blue-500",
-    iconBg: "bg-blue-50 text-blue-600",
-  },
-  {
-    label: "Instansi Penerima",
-    value: "86",
-    delta: "+2,3%",
-    up: true,
-    icon: BuildingIcon,
-    accent: "bg-rose-500",
-    iconBg: "bg-rose-50 text-rose-600",
-  },
-];
-
-const monthlyData = [
-  { month: "Jan", value: 420 },
-  { month: "Feb", value: 380 },
-  { month: "Mar", value: 510 },
-  { month: "Apr", value: 460 },
-  { month: "Mei", value: 620 },
-  { month: "Jun", value: 540 },
-  { month: "Jul", value: 720 },
-];
-
-const donutSegments = [
-  { label: "Lemari Arsip 01", value: 30, color: "#3b82f6" },
-  { label: "Lemari Arsip 02", value: 25, color: "#e11d48" },
-  { label: "Lemari Arsip 03", value: 25, color: "#f59e0b" },
-  { label: "Lemari Arsip 04", value: 15, color: "#9333ea" },
-  { label: "Lemari Khusus", value: 5, color: "#0d9488" },
-];
-
-interface ProposalData {
-  id: number;
-  name: string;
-  instansi: string;
-  bidangId: BidangId;
-  nominal: string;
-  tanggal: string;
-  tahun: string;
-  lemariArsip: string;
-  rakArsip?: string;
-  nomorArsip?: string;
-  catatanBidang?: string;
-}
-
-const allProposals: ProposalData[] = [
-  // Bidang 1
-  {
-    id: 101,
-    name: "Pendidikan & Pelatihan Intensif Paskibraka Kota 2026",
-    instansi: "Paskibraka Kota (PPI)",
-    bidangId: 1,
-    nominal: "Rp 150.000.000",
-    tanggal: "10 Agu 2026",
-    tahun: "2026",
-    lemariArsip: "Lemari Arsip 01",
-    rakArsip: "Rak 01",
-    nomorArsip: "No. 01",
-    catatanBidang: "Dokumen NPHD lengkap dan terarsip di Lemari 01",
-  },
-  {
-    id: 102,
-    name: "Kemah Wawasan Kebangsaan & Bela Negara Pramuka",
-    instansi: "Kwartir Cabang Gerakan Pramuka",
-    bidangId: 1,
-    nominal: "Rp 85.000.000",
-    tanggal: "08 Agu 2026",
-    tahun: "2026",
-    lemariArsip: "Lemari Arsip 01",
-    rakArsip: "Rak 01",
-    nomorArsip: "No. 02",
-    catatanBidang: "Berkas tersimpan di Lemari Arsip 01 Bidang 1",
-  },
-  {
-    id: 103,
-    name: "Sosialisasi & Pemantapan Nilai Pancasila Pelajar",
-    instansi: "SMPN 4 Kota",
-    bidangId: 1,
-    nominal: "Rp 45.000.000",
-    tanggal: "29 Jul 2026",
-    tahun: "2026",
-    lemariArsip: "Lemari Arsip 01",
-    rakArsip: "Rak 02",
-    nomorArsip: "No. 03",
-    catatanBidang: "Tersimpan di Lemari Arsip 01",
-  },
-
-  // Bidang 2
-  {
-    id: 201,
-    name: "Revitalisasi Sanggar Budaya & Karang Taruna Kota",
-    instansi: "Dinas Kebudayaan & Karang Taruna",
-    bidangId: 2,
-    nominal: "Rp 250.000.000",
-    tanggal: "05 Agu 2026",
-    tahun: "2026",
-    lemariArsip: "Lemari Arsip 02",
-    rakArsip: "Rak 01",
-    nomorArsip: "No. 01",
-    catatanBidang: "Dokumen NPHD lengkap di Lemari Arsip 02",
-  },
-  {
-    id: 202,
-    name: "Pemberdayaan Karang Taruna Berbasis Kelurahan",
-    instansi: "Pengurus Karang Taruna Kota",
-    bidangId: 2,
-    nominal: "Rp 95.000.000",
-    tanggal: "03 Agu 2026",
-    tahun: "2026",
-    lemariArsip: "Lemari Arsip 02",
-    rakArsip: "Rak 01",
-    nomorArsip: "No. 02",
-    catatanBidang: "Tersimpan di Lemari Arsip 02",
-  },
-
-  // Bidang 3
-  {
-    id: 301,
-    name: "Penguatan Kapasitas Kerukunan Umat Beragama (FKUB)",
-    instansi: "FKUB Kota",
-    bidangId: 3,
-    nominal: "Rp 85.000.000",
-    tanggal: "04 Agu 2026",
-    tahun: "2026",
-    lemariArsip: "Lemari Arsip 03",
-    rakArsip: "Rak 01",
-    nomorArsip: "No. 01",
-    catatanBidang: "Tersimpan di Lemari Arsip 03",
-  },
-  {
-    id: 302,
-    name: "Festival Kerukunan Lintas Agama & Dialog Toleransi",
-    instansi: "Panitia Bersama FKUB",
-    bidangId: 3,
-    nominal: "Rp 120.000.000",
-    tanggal: "01 Agu 2026",
-    tahun: "2026",
-    lemariArsip: "Lemari Arsip 03",
-    rakArsip: "Rak 01",
-    nomorArsip: "No. 02",
-    catatanBidang: "NPHD tersimpan di Lemari Arsip 03",
-  },
-
-  // Bidang 4
-  {
-    id: 401,
-    name: "Pelatihan Deteksi Dini & Early Warning System (FKDM)",
-    instansi: "Forum Kewaspadaan Dini Masyarakat",
-    bidangId: 4,
-    nominal: "Rp 95.000.000",
-    tanggal: "07 Agu 2026",
-    tahun: "2026",
-    lemariArsip: "Lemari Arsip 04",
-    rakArsip: "Rak 01",
-    nomorArsip: "No. 01",
-    catatanBidang: "Tersimpan di Lemari Arsip 04",
-  },
-];
+const formatRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 
 export default function DashboardPage() {
   const { mode, bidangId, getUrl } = useMode();
+  const { proposals, arsipList } = useHibah();
 
   // Mode Bidang Filter
-  const bidangProposals = allProposals.filter((p) => p.bidangId === bidangId);
+  const bidangProposals = proposals.filter((p) => p.bidangId === bidangId);
+  const displayedProposals = mode === "bidang" ? bidangProposals : proposals;
 
-  const maxValue = Math.max(...monthlyData.map((d) => d.value));
+  const totalNominal = proposals.reduce((acc, p) => acc + (p.nominal || 0), 0);
+  const totalDokumen = proposals.length + arsipList.length;
+  const uniqueInstansi = new Set([...proposals.map((p) => p.instansi), ...arsipList.map((a) => a.instansi)]).size;
+  const activeLemariCount = new Set([...proposals.map((p) => p.lemariArsip), ...arsipList.map((a) => a.lemariArsip)]).size;
+
+  const adminStats = [
+    {
+      label: "Total Dokumen Hibah",
+      value: String(totalDokumen),
+      delta: totalDokumen > 0 ? `${totalDokumen} berkas` : "0 berkas",
+      up: true,
+      icon: DocumentIcon,
+      accent: "bg-red-500",
+      iconBg: "bg-red-50 text-red-600",
+    },
+    {
+      label: "Dana Diajukan",
+      value: formatRupiah(totalNominal),
+      delta: totalNominal > 0 ? "Total Nilai Usulan" : "Rp 0",
+      up: true,
+      icon: MoneyIcon,
+      accent: "bg-emerald-500",
+      iconBg: "bg-emerald-50 text-emerald-600",
+    },
+    {
+      label: "Lemari Terpakai",
+      value: `${activeLemariCount} Lemari`,
+      delta: activeLemariCount > 0 ? `${activeLemariCount} aktif` : "0 aktif",
+      up: true,
+      icon: ArchiveIcon,
+      accent: "bg-blue-500",
+      iconBg: "bg-blue-50 text-blue-600",
+    },
+    {
+      label: "Instansi / Lembaga",
+      value: String(uniqueInstansi),
+      delta: uniqueInstansi > 0 ? `${uniqueInstansi} lembaga` : "0 lembaga",
+      up: true,
+      icon: BuildingIcon,
+      accent: "bg-rose-500",
+      iconBg: "bg-rose-50 text-rose-600",
+    },
+  ];
+
+  // Lemari Distribution
+  const lemariColors: Record<string, string> = {
+    "Lemari Arsip 01": "#3b82f6",
+    "Lemari Arsip 02": "#e11d48",
+    "Lemari Arsip 03": "#f59e0b",
+    "Lemari Arsip 04": "#9333ea",
+    "Lemari Arsip Khusus": "#0d9488",
+  };
+
+  const donutSegments = LEMARI_OPTIONS.map((opt) => {
+    const count = proposals.filter((p) => p.lemariArsip === opt.id).length + arsipList.filter((a) => a.lemariArsip === opt.id).length;
+    const percentage = totalDokumen > 0 ? Math.round((count / totalDokumen) * 100) : 0;
+    return {
+      label: opt.label,
+      value: percentage,
+      count,
+      color: lemariColors[opt.id] || "#71717a",
+    };
+  });
+
   const circumference = 2 * Math.PI * 52; // r=52
 
   return (
@@ -280,11 +153,7 @@ export default function DashboardPage() {
                     <p className="text-2xl font-bold tracking-tight text-zinc-900">
                       {stat.value}
                     </p>
-                    <span
-                      className={`inline-flex items-center gap-1 text-xs font-semibold ${
-                        stat.up ? "text-emerald-600" : "text-zinc-500"
-                      }`}
-                    >
+                    <span className="text-xs font-semibold text-zinc-500">
                       {stat.delta}
                     </span>
                   </div>
@@ -296,45 +165,36 @@ export default function DashboardPage() {
             })}
           </div>
 
-          {/* Charts Row */}
+          {/* Donut Chart: Lemari Arsip Distribution */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm lg:col-span-2">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-semibold">
-                    Volume Dokumen Terarsip (Bulanan)
-                  </h2>
-                  <p className="text-sm text-zinc-500">Tahun Anggaran 2026</p>
-                </div>
-                <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                  <TrendUpIcon className="h-4 w-4" />
-                  <span>+18.4%</span>
-                </div>
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm lg:col-span-2 flex flex-col justify-between">
+              <div>
+                <h2 className="text-base font-semibold">Ringkasan Sistem Pengarsipan</h2>
+                <p className="text-sm text-zinc-500">Kapasitas dan alur penyimpanan arsip hibah Kesbangpol</p>
               </div>
-              <div className="flex h-56 items-end gap-3 sm:gap-5">
-                {monthlyData.map((d) => (
-                  <div
-                    key={d.month}
-                    className="group flex h-full flex-1 flex-col items-center gap-2"
-                  >
-                    <span className="text-[11px] font-semibold text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100">
-                      {d.value}
-                    </span>
-                    <div className="flex w-full flex-1 items-end">
-                      <div
-                        className="w-full rounded-t-lg bg-gradient-to-t from-red-600 to-rose-400 transition-all duration-300 group-hover:from-red-500 group-hover:to-rose-300"
-                        style={{ height: `${(d.value / maxValue) * 100}%` }}
-                      />
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6">
+                {([1, 2, 3, 4] as BidangId[]).map((id) => {
+                  const count = proposals.filter((p) => p.bidangId === id).length + arsipList.filter((a) => a.bidangId === id).length;
+                  return (
+                    <div key={id} className="rounded-xl border border-zinc-100 bg-zinc-50/70 p-3.5">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className={`h-2.5 w-2.5 rounded-full ${bidangInfo[id].color}`} />
+                        <p className="text-xs font-bold text-zinc-800">Bidang {id}</p>
+                      </div>
+                      <p className="text-xl font-black text-zinc-900">{count}</p>
+                      <p className="text-[10px] text-zinc-400 mt-0.5">Berkas Terarsip</p>
                     </div>
-                    <span className="text-xs font-medium text-zinc-500">
-                      {d.month}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-zinc-500 border-t border-zinc-100 pt-3">
+                <span>Penyimpanan Berkas Fisik: Lemari 01 s/d 04 & Khusus</span>
+                <span className="font-semibold text-zinc-700">Tahun Anggaran 2026</span>
               </div>
             </div>
 
-            {/* Donut Chart: Lemari Arsip Distribution */}
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
               <h2 className="text-base font-semibold">Distribusi Lemari Arsip</h2>
               <p className="text-sm text-zinc-500">Klasifikasi tempat penyimpanan</p>
@@ -374,7 +234,7 @@ export default function DashboardPage() {
                   })}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <p className="text-2xl font-bold">1.248</p>
+                  <p className="text-2xl font-bold">{totalDokumen}</p>
                   <p className="text-xs text-zinc-500">Total Berkas</p>
                 </div>
               </div>
@@ -392,7 +252,7 @@ export default function DashboardPage() {
                       <span>{seg.label}</span>
                     </div>
                     <span className="font-semibold text-zinc-900">
-                      {seg.value}%
+                      {seg.count} berkas ({seg.value}%)
                     </span>
                   </li>
                 ))}
@@ -423,7 +283,7 @@ export default function DashboardPage() {
         <div className="overflow-x-auto no-scrollbar">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-100 text-xs uppercase tracking-wider text-zinc-400">
+              <tr className="border-b border-zinc-100 bg-zinc-50/70 text-xs uppercase tracking-wider text-zinc-400">
                 <th className="px-5 py-3 font-semibold">Nama Dokumen Hibah</th>
                 <th className="px-5 py-3 font-semibold">Instansi / Pemohon</th>
                 <th className="px-5 py-3 font-semibold whitespace-nowrap">Tujuan Bidang</th>
@@ -432,21 +292,21 @@ export default function DashboardPage() {
                 <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
-            <tbody>
-              {(mode === "bidang" ? bidangProposals : allProposals).map((p) => (
+            <tbody className="divide-y divide-zinc-100">
+              {displayedProposals.slice(0, 8).map((p) => (
                 <tr
                   key={p.id}
-                  className="border-b border-zinc-50 transition-colors last:border-0 hover:bg-zinc-50/70"
+                  className="transition-colors hover:bg-zinc-50/70"
                 >
                   <td className="px-5 py-4 font-medium">
                     <p className="text-zinc-900 font-semibold">{p.name}</p>
-                    {p.catatanBidang && (
+                    {p.catatan && (
                       <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-1 italic">
-                        {p.catatanBidang}
+                        {p.catatan}
                       </p>
                     )}
                   </td>
-                  <td className="px-5 py-4 text-zinc-600">{p.instansi}</td>
+                  <td className="px-5 py-4 text-zinc-600 text-xs">{p.instansi}</td>
                   <td className="px-5 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white whitespace-nowrap shrink-0 ${
@@ -457,7 +317,7 @@ export default function DashboardPage() {
                     </span>
                   </td>
                   <td className="px-5 py-4 font-semibold tabular-nums text-zinc-900 whitespace-nowrap">
-                    {p.nominal}
+                    {formatRupiah(p.nominal)}
                   </td>
                   <td className="px-5 py-4 whitespace-nowrap">
                     <LokasiArsipBadge
@@ -481,6 +341,13 @@ export default function DashboardPage() {
                   </td>
                 </tr>
               ))}
+              {displayedProposals.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-xs text-zinc-400">
+                    Belum ada data usulan hibah terdaftar. Silakan tambahkan usulan baru melalui halaman Kelola Lemari Arsip.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

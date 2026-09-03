@@ -35,9 +35,9 @@ export default function Navbar({ open, onClose }: NavbarProps) {
 
   const mainMenu = [
     { name: "Beranda", slug: "Beranda", href: getUrl("Beranda"), icon: DashboardIcon },
-    { name: "Data Hibah", slug: "Hibah", href: getUrl("Hibah"), icon: FolderIcon, badge: "12" },
-    { name: "Arsip Dokumen", slug: "Arsip", href: getUrl("Arsip"), icon: ArchiveIcon, badge: "48" },
-    { name: "Lembaga & Ormas", slug: "Lembaga", href: getUrl("Lembaga"), icon: BuildingIcon },
+    { name: "Data Hibah", slug: "Hibah", href: getUrl("Hibah"), icon: FolderIcon },
+    { name: "Arsip Dokumen", slug: "Arsip", href: getUrl("Arsip"), icon: ArchiveIcon },
+    { name: "Mitra Kerja", slug: "Lembaga", href: getUrl("Lembaga"), icon: BuildingIcon },
     // Menu Pengguna hanya tampil untuk mode admin, staff bidang tidak melihatnya sama sekali.
     ...(mode === "admin"
       ? [{ name: "Pengguna", slug: "Pengguna", href: getUrl("Pengguna"), icon: UsersIcon }]

@@ -7,26 +7,12 @@ import Navbar from "./navbar";
 import { BellIcon, MenuIcon, SearchIcon, LogoutIcon } from "./icons";
 import { useMode } from "@/context/mode-context";
 
-const notifications = [
-  {
-    title: "Proposal baru masuk",
-    desc: "Revitalisasi Taman Budaya diajukan oleh Dinas Kebudayaan.",
-    time: "5 menit lalu",
-    unread: true,
-  },
-  {
-    title: "Pencairan dana disetujui",
-    desc: "Hibah FKUB Kota sebesar Rp85.000.000 telah dicairkan.",
-    time: "1 jam lalu",
-    unread: true,
-  },
-  {
-    title: "Laporan bulanan siap",
-    desc: "Laporan realisasi hibah bulan Juli telah dibuat otomatis.",
-    time: "3 jam lalu",
-    unread: false,
-  },
-];
+const notifications: {
+  title: string;
+  desc: string;
+  time: string;
+  unread: boolean;
+}[] = [];
 
 export default function DashboardShell({
   children,
@@ -36,7 +22,7 @@ export default function DashboardShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { currentUser, isLoggedIn, logout, getUrl, getHomeUrl } = useMode();
+  const { currentUser, isLoggedIn, logout, getUrl, getHomeUrl, mode } = useMode();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -48,7 +34,7 @@ export default function DashboardShell({
     beranda: "Beranda",
     hibah: "Data Hibah",
     arsip: "Arsip Dokumen Bidang",
-    lembaga: "Lembaga & Ormas",
+    lembaga: "Mitra Kerja",
     pengguna: "Pengguna",
     pengaturan: "Pengaturan",
     bantuan: "Bantuan",
@@ -121,67 +107,81 @@ export default function DashboardShell({
           </div>
 
           {/* Notifications */}
-          <div className="relative">
-            <button
-              onClick={() => setNotifOpen((v) => !v)}
-              className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-              aria-label="Notifikasi"
-              aria-expanded={notifOpen}
-            >
-              <BellIcon className="h-5 w-5" />
-              <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-              </span>
-            </button>
+          {mode === "admin" && (
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen((v) => !v)}
+                className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                aria-label="Notifikasi"
+                aria-expanded={notifOpen}
+              >
+                <BellIcon className="h-5 w-5" />
+                {notifications.some((n) => n.unread) && (
+                  <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                  </span>
+                )}
+              </button>
 
-            {notifOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setNotifOpen(false)}
-                  aria-hidden="true"
-                />
-                <div
-                  role="dialog"
-                  aria-label="Daftar notifikasi"
-                  className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl shadow-zinc-950/10 sm:w-96"
-                >
-                  <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-                    <p className="text-sm font-semibold">Notifikasi</p>
-                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
-                      {notifications.filter((n) => n.unread).length} baru
-                    </span>
+              {notifOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setNotifOpen(false)}
+                    aria-hidden="true"
+                  />
+                  <div
+                    role="dialog"
+                    aria-label="Daftar notifikasi"
+                    className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl shadow-zinc-950/10 sm:w-96"
+                  >
+                    <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
+                      <p className="text-sm font-semibold">Notifikasi</p>
+                      {notifications.filter((n) => n.unread).length > 0 ? (
+                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
+                          {notifications.filter((n) => n.unread).length} baru
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-zinc-400">0 baru</span>
+                      )}
+                    </div>
+                    {notifications.length > 0 ? (
+                      <ul className="max-h-80 overflow-y-auto">
+                        {notifications.map((n) => (
+                          <li
+                            key={n.title}
+                            className={`flex gap-3 border-b border-zinc-50 px-4 py-3 transition-colors hover:bg-zinc-50 last:border-0 ${
+                              n.unread ? "bg-red-50/50" : ""
+                            }`}
+                          >
+                            <span
+                              className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                                n.unread ? "bg-red-500" : "bg-zinc-300"
+                              }`}
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-zinc-900">
+                                {n.title}
+                              </p>
+                              <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
+                                {n.desc}
+                              </p>
+                              <p className="mt-1 text-[11px] text-zinc-400">{n.time}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="p-8 text-center text-xs text-zinc-400">
+                        Tidak ada notifikasi baru saat ini.
+                      </div>
+                    )}
                   </div>
-                  <ul className="max-h-80 overflow-y-auto">
-                    {notifications.map((n) => (
-                      <li
-                        key={n.title}
-                        className={`flex gap-3 border-b border-zinc-50 px-4 py-3 transition-colors hover:bg-zinc-50 last:border-0 ${
-                          n.unread ? "bg-red-50/50" : ""
-                        }`}
-                      >
-                        <span
-                          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                            n.unread ? "bg-red-500" : "bg-zinc-300"
-                          }`}
-                        />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-zinc-900">
-                            {n.title}
-                          </p>
-                          <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
-                            {n.desc}
-                          </p>
-                          <p className="mt-1 text-[11px] text-zinc-400">{n.time}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </>
-            )}
-          </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* User Profile — click avatar/name to go to /pengaturan */}
           <div className="flex items-center gap-2 border-l border-zinc-200 pl-3">
