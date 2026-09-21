@@ -41,7 +41,7 @@ export default function DashboardShell({
     lemari: "Denah Lemari",
     hibah: "Data Hibah",
     arsip: "Arsip Dokumen Bidang",
-    lembaga: "Mitra Kerja",
+    lembaga: "Penerima Hibah",
     laporan: "Laporan & Statistik",
     pengguna: "Pengguna",
     pengaturan: "Pengaturan",

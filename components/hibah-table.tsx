@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
@@ -311,7 +311,7 @@ export default function HibahTable() {
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/70 text-xs uppercase tracking-wider text-zinc-400">
                 <th className="px-5 py-3.5 font-semibold">Nama Dokumen Hibah</th>
-                <th className="px-5 py-3.5 font-semibold">Mitra Kerja</th>
+                <th className="px-5 py-3.5 font-semibold">Penerima Hibah</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Tujuan Bidang</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Kategori</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Nominal Hibah</th>
@@ -735,7 +735,7 @@ export default function HibahTable() {
                         className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Mitra Kerja</label>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Penerima Hibah</label>
                       <input value={editInstansi} onChange={e => setEditInstansi(e.target.value)}
                         className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
                     </div>
@@ -1027,7 +1027,7 @@ export default function HibahTable() {
                         </p>
                         <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-200 space-y-1 my-2">
                           <p><strong>Nama Usulan:</strong> {selectedProposal.name}</p>
-                          <p><strong>Mitra Kerja:</strong> {selectedProposal.instansi}</p>
+                          <p><strong>Penerima Hibah:</strong> {selectedProposal.instansi}</p>
                           <p><strong>Bidang Pengampu:</strong> {bidangInfo[selectedProposal.bidangId].fullName}</p>
                           <p><strong>Kategori Kegiatan:</strong> {selectedProposal.kategori}</p>
                           <p><strong>Besaran Usulan:</strong> {formatRupiah(selectedProposal.nominal)}</p>

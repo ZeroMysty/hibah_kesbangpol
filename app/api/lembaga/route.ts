@@ -98,17 +98,17 @@ export async function PUT(req: NextRequest) {
       ]
     );
 
-    return NextResponse.json({ message: "Data mitra kerja berhasil diperbarui." });
+    return NextResponse.json({ message: "Data penerima hibah berhasil diperbarui." });
   } catch (error: any) {
     console.error("[API/lembaga PUT]", error);
     return NextResponse.json(
-      { error: "Gagal memperbarui data mitra kerja di database: " + error.message },
+      { error: "Gagal memperbarui data penerima hibah di database: " + error.message },
       { status: 500 }
     );
   }
 }
 
-// DELETE — hapus mitra kerja berdasarkan id
+// DELETE — hapus penerima hibah berdasarkan id
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -123,11 +123,11 @@ export async function DELETE(req: NextRequest) {
 
     await pool.query("DELETE FROM `mitra_kerja` WHERE id = ?", [id]);
 
-    return NextResponse.json({ message: "Data mitra kerja berhasil dihapus." });
+    return NextResponse.json({ message: "Data penerima hibah berhasil dihapus." });
   } catch (error: any) {
     console.error("[API/lembaga DELETE]", error);
     return NextResponse.json(
-      { error: "Gagal menghapus data mitra kerja dari database: " + error.message },
+      { error: "Gagal menghapus data penerima hibah dari database: " + error.message },
       { status: 500 }
     );
   }
