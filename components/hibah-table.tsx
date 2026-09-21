@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
@@ -20,11 +20,13 @@ import {
   EyeIcon,
   PencilIcon,
   PlusIcon,
-  SearchIcon,
   TrashIcon,
   XIcon,
 } from "./icons";
 import DeleteConfirmModal from "./delete-confirm-modal";
+import SearchInput from "./search-input";
+import { TableEmptyRow } from "./empty-state";
+import { formatRupiah } from "@/lib/utils";
 
 const lemariFilterList = [
   "Semua",
@@ -35,7 +37,6 @@ const lemariFilterList = [
   "Lemari Arsip Khusus",
 ];
 
-const formatRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 
 export default function HibahTable() {
   const { mode, bidangId } = useMode();
@@ -55,7 +56,7 @@ export default function HibahTable() {
   const [filterBidang, setFilterBidang] = useState<number | "Semua">(
     mode === "bidang" ? bidangId : "Semua"
   );
-  // Auto-hide documents older than 5 years (permanent — only Arsip Hibah can show these)
+  // Auto-hide documents older than 5 years (permanent â€” only Arsip Hibah can show these)
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProposalItem | null>(null);
@@ -109,6 +110,14 @@ export default function HibahTable() {
       setNewLemari(`Lemari Arsip 0${bidangId}` as LemariArsip);
     }
   }, [mode, bidangId]);
+
+  // Read search query from URL parameter if directed from topbar search
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const q = new URLSearchParams(window.location.search).get("q");
+      if (q) setQuery(q);
+    }
+  }, []);
 
   const filtered = proposals.filter((p) => {
     // Hard filter: documents older than 5 years are not shown here
@@ -179,7 +188,7 @@ export default function HibahTable() {
     proposalName: string
   ) => {
     updateProposalLokasi(id, targetLemari, targetRak, targetNomor);
-    showToast(`Lokasi arsip "${proposalName}" diperbarui: ${targetLemari} • ${targetRak} • ${targetNomor}.`);
+    showToast(`Lokasi arsip "${proposalName}" diperbarui: ${targetLemari} â€¢ ${targetRak} â€¢ ${targetNomor}.`);
   };
 
   return (
@@ -199,6 +208,18 @@ export default function HibahTable() {
           </button>
         </div>
       )}
+
+      {/* Header Banner */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">
+            Daftar Dokumen Hibah
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-500">
+            Database seluruh berkas dokumen hibah yang telah diterima dan diarsipkan di Kesbangpol.
+          </p>
+        </div>
+      </div>
 
       {/* Filter Toolbar */}
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
@@ -257,16 +278,12 @@ export default function HibahTable() {
 
         {/* Search & Actions on Right */}
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari nama hibah / instansi..."
-              className="h-9 w-44 rounded-xl border border-zinc-200 bg-zinc-50 pl-9 pr-4 text-xs outline-none transition focus:border-red-400 focus:bg-white sm:w-56"
-            />
-          </div>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Cari nama hibah / instansi..."
+            className="w-44 sm:w-56"
+          />
 
           <button
             onClick={() => alert("Mengunduh Rekap CSV Hibah Berdasarkan Lemari Arsip...")}
@@ -282,7 +299,7 @@ export default function HibahTable() {
             className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
           >
             <PlusIcon className="h-3.5 w-3.5" />
-            <span>Tambah Usulan Hibah</span>
+            <span>Tambah Dokumen Baru</span>
           </button>
         </div>
       </div>
@@ -293,11 +310,11 @@ export default function HibahTable() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/70 text-xs uppercase tracking-wider text-zinc-400">
-                <th className="px-5 py-3.5 font-semibold">Nama Usulan Hibah</th>
-                <th className="px-5 py-3.5 font-semibold">Lembaga Pemohon</th>
+                <th className="px-5 py-3.5 font-semibold">Nama Dokumen Hibah</th>
+                <th className="px-5 py-3.5 font-semibold">Mitra Kerja</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Tujuan Bidang</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Kategori</th>
-                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Nominal Diajukan</th>
+                <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Nominal Hibah</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Lokasi Fisik Arsip</th>
                 <th className="px-5 py-3.5 text-left font-semibold whitespace-nowrap">Aksi</th>
               </tr>
@@ -377,21 +394,19 @@ export default function HibahTable() {
                 );
               })}
 
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-xs text-zinc-400">
-                    Memuat data usulan hibah dari database...
-                  </td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-xs text-zinc-400">
-                    {proposals.length === 0
+              {isLoading && (
+                <TableEmptyRow colSpan={7} message="Memuat data usulan hibah dari database..." />
+              )}
+              {!isLoading && filtered.length === 0 && (
+                <TableEmptyRow
+                  colSpan={7}
+                  message={
+                    proposals.length === 0
                       ? "Belum ada data usulan hibah di database. Silakan klik 'Tambah Usulan Hibah'."
-                      : "Tidak ada data usulan hibah yang sesuai kriteria pencarian."}
-                  </td>
-                </tr>
-              ) : null}
+                      : "Tidak ada data usulan hibah yang sesuai kriteria pencarian."
+                  }
+                />
+              )}
             </tbody>
           </table>
         </div>
@@ -609,7 +624,7 @@ export default function HibahTable() {
                       <div className="text-left">
                         <p className="text-xs font-bold text-zinc-900 truncate max-w-xs">{newFile.name}</p>
                         <p className="text-[11px] text-emerald-600 font-semibold">
-                          {(newFile.size / (1024 * 1024)).toFixed(2)} MB • Berkas Terpilih (Siap dipratinjau)
+                          {(newFile.size / (1024 * 1024)).toFixed(2)} MB â€¢ Berkas Terpilih (Siap dipratinjau)
                         </p>
                       </div>
                     </div>
@@ -712,7 +727,7 @@ export default function HibahTable() {
               {/* ---- Edit Panel ---- */}
               {isEditing && (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
-                  <p className="text-xs font-bold text-blue-800 mb-1">Mode Edit — Ubah Data Usulan & Lokasi Lemari</p>
+                  <p className="text-xs font-bold text-blue-800 mb-1">Mode Edit â€” Ubah Data Usulan & Lokasi Lemari</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Nama Usulan</label>
@@ -720,7 +735,7 @@ export default function HibahTable() {
                         className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Lembaga Pemohon</label>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Mitra Kerja</label>
                       <input value={editInstansi} onChange={e => setEditInstansi(e.target.value)}
                         className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
                     </div>
@@ -1012,7 +1027,7 @@ export default function HibahTable() {
                         </p>
                         <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-200 space-y-1 my-2">
                           <p><strong>Nama Usulan:</strong> {selectedProposal.name}</p>
-                          <p><strong>Lembaga Pemohon:</strong> {selectedProposal.instansi}</p>
+                          <p><strong>Mitra Kerja:</strong> {selectedProposal.instansi}</p>
                           <p><strong>Bidang Pengampu:</strong> {bidangInfo[selectedProposal.bidangId].fullName}</p>
                           <p><strong>Kategori Kegiatan:</strong> {selectedProposal.kategori}</p>
                           <p><strong>Besaran Usulan:</strong> {formatRupiah(selectedProposal.nominal)}</p>
@@ -1022,7 +1037,7 @@ export default function HibahTable() {
                               {selectedProposal.lemariArsip} &bull; {selectedProposal.rakArsip || "Rak 01"} &bull; {selectedProposal.nomorArsip || "No. 01"}
                             </span>
                           </p>
-                          <p><strong>Status Retensi:</strong> {isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal) ? "Arsip Retensi (> 5 Tahun)" : "Arsip Aktif (≤ 5 Tahun)"}</p>
+                          <p><strong>Status Retensi:</strong> {isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal) ? "Arsip Retensi (> 5 Tahun)" : "Arsip Aktif (â‰¤ 5 Tahun)"}</p>
                         </div>
                         <p className="text-zinc-600 text-[10px] italic">
                           Dokumen ini telah diarsipkan dan tersimpan secara sah ke dalam Sistem Pengarsipan Hibah Digital Bakesbangpol Kota Bandung.
@@ -1106,3 +1121,5 @@ export default function HibahTable() {
     </div>
   );
 }
+
+

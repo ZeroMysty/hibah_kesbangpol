@@ -32,13 +32,30 @@ export default function DashboardShell({
 
   const pageTitleMap: Record<string, string> = {
     beranda: "Beranda",
+    admin: "Beranda",
+    bidang1: "Beranda",
+    bidang2: "Beranda",
+    bidang3: "Beranda",
+    bidang4: "Beranda",
+    dokumen: "Daftar Dokumen",
+    lemari: "Denah Lemari",
     hibah: "Data Hibah",
     arsip: "Arsip Dokumen Bidang",
     lembaga: "Mitra Kerja",
+    laporan: "Laporan & Statistik",
     pengguna: "Pengguna",
     pengaturan: "Pengaturan",
     bantuan: "Bantuan",
   };
+
+  const isBeranda = [
+    "beranda",
+    "admin",
+    "bidang1",
+    "bidang2",
+    "bidang3",
+    "bidang4",
+  ].includes(currentSlug.toLowerCase());
 
   const pageTitle = pageTitleMap[currentSlug.toLowerCase()] ?? "Dashboard";
 
@@ -78,7 +95,7 @@ export default function DashboardShell({
           </button>
 
           <div className="hidden text-sm sm:flex sm:items-center sm:gap-1.5">
-            {currentSlug.toLowerCase() === "beranda" ? (
+            {isBeranda ? (
               <span className="font-semibold text-zinc-900">{pageTitle}</span>
             ) : currentSlug.toLowerCase() === "pengaturan" || currentSlug.toLowerCase() === "bantuan" ? (
               <span className="font-semibold text-zinc-900">{pageTitle}</span>
@@ -94,7 +111,15 @@ export default function DashboardShell({
           </div>
 
           {/* Search Box */}
-          <div className="ml-auto relative hidden sm:block">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (searchQuery.trim()) {
+                router.push(`${getUrl("Dokumen")}?q=${encodeURIComponent(searchQuery.trim())}`);
+              }
+            }}
+            className="ml-auto relative hidden sm:block"
+          >
             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               type="search"
@@ -104,7 +129,7 @@ export default function DashboardShell({
               className="h-9 w-52 rounded-xl border border-zinc-200 bg-zinc-50 pl-9 pr-4 text-sm outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white focus:w-64"
               style={{ transition: "width 0.2s" }}
             />
-          </div>
+          </form>
 
           {/* Notifications */}
           {mode === "admin" && (

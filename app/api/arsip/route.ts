@@ -116,6 +116,7 @@ export async function PUT(req: NextRequest) {
       instansi_penerima,
       bidang_pengampu,
       tahun_anggaran,
+      scan_foto,
     } = body;
 
     if (!id) {
@@ -125,31 +126,61 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    await pool.query(
-      `UPDATE \`arsip\` SET
-        jenis_dokumen_arsip = ?,
-        judul_berkas_dokumen = ?,
-        nominal_anggaran = ?,
-        lemari_arsip = ?,
-        posisi_rak = ?,
-        nomor_berkas_urut = ?,
-        instansi_penerima = ?,
-        bidang_pengampu = ?,
-        tahun_anggaran = ?
-       WHERE id = ?`,
-      [
-        jenis_dokumen_arsip,
-        judul_berkas_dokumen,
-        nominal_anggaran != null ? Number(nominal_anggaran) : null,
-        lemari_arsip,
-        posisi_rak,
-        nomor_berkas_urut,
-        instansi_penerima,
-        bidang_pengampu != null ? String(bidang_pengampu) : null,
-        tahun_anggaran != null ? String(tahun_anggaran) : null,
-        id,
-      ]
-    );
+    if (scan_foto !== undefined) {
+      await pool.query(
+        `UPDATE \`arsip\` SET
+          jenis_dokumen_arsip = ?,
+          judul_berkas_dokumen = ?,
+          nominal_anggaran = ?,
+          lemari_arsip = ?,
+          posisi_rak = ?,
+          nomor_berkas_urut = ?,
+          instansi_penerima = ?,
+          bidang_pengampu = ?,
+          tahun_anggaran = ?,
+          scan_foto = ?
+         WHERE id = ?`,
+        [
+          jenis_dokumen_arsip,
+          judul_berkas_dokumen,
+          nominal_anggaran != null ? Number(nominal_anggaran) : null,
+          lemari_arsip,
+          posisi_rak,
+          nomor_berkas_urut,
+          instansi_penerima,
+          bidang_pengampu != null ? String(bidang_pengampu) : null,
+          tahun_anggaran != null ? String(tahun_anggaran) : null,
+          scan_foto ?? null,
+          id,
+        ]
+      );
+    } else {
+      await pool.query(
+        `UPDATE \`arsip\` SET
+          jenis_dokumen_arsip = ?,
+          judul_berkas_dokumen = ?,
+          nominal_anggaran = ?,
+          lemari_arsip = ?,
+          posisi_rak = ?,
+          nomor_berkas_urut = ?,
+          instansi_penerima = ?,
+          bidang_pengampu = ?,
+          tahun_anggaran = ?
+         WHERE id = ?`,
+        [
+          jenis_dokumen_arsip,
+          judul_berkas_dokumen,
+          nominal_anggaran != null ? Number(nominal_anggaran) : null,
+          lemari_arsip,
+          posisi_rak,
+          nomor_berkas_urut,
+          instansi_penerima,
+          bidang_pengampu != null ? String(bidang_pengampu) : null,
+          tahun_anggaran != null ? String(tahun_anggaran) : null,
+          id,
+        ]
+      );
+    }
 
     return NextResponse.json({ message: "Data arsip berhasil diperbarui." });
   } catch (error: any) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 
-// GET — ambil semua data mitra kerja dari tabel mitra_kerja
+// GET — ambil semua data Penerima Hibah dari tabel mitra_kerja
 export async function GET() {
   try {
     const [rows] = await pool.query(
@@ -11,13 +11,13 @@ export async function GET() {
   } catch (error: any) {
     console.error("[API/lembaga GET]", error);
     return NextResponse.json(
-      { error: "Gagal mengambil data mitra kerja dari database: " + error.message },
+      { error: "Gagal mengambil data Penerima Hibah dari database: " + error.message },
       { status: 500 }
     );
   }
 }
 
-// POST — simpan mitra kerja baru ke tabel mitra_kerja
+// POST — simpan Penerima Hibah baru ke tabel mitra_kerja
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -45,19 +45,19 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json(
-      { message: "Mitra kerja berhasil disimpan.", id: result.insertId },
+      { message: "Penerima Hibah berhasil disimpan.", id: result.insertId },
       { status: 201 }
     );
   } catch (error: any) {
     console.error("[API/lembaga POST]", error);
     return NextResponse.json(
-      { error: "Gagal menyimpan data mitra kerja ke database: " + error.message },
+      { error: "Gagal menyimpan data Penerima Hibah ke database: " + error.message },
       { status: 500 }
     );
   }
 }
 
-// PUT — update data mitra kerja berdasarkan id
+// PUT — update data Penerima Hibah berdasarkan id
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();

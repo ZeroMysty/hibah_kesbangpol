@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import DashboardPage from "@/app/(dashboard)/page";
 import HibahTable from "@/components/hibah-table";
 import ArsipTable from "@/components/arsip-table";
+import DenahLemari from "@/components/denah-lemari";
 import LembagaPage from "@/app/(dashboard)/lembaga/page";
 import LaporanPage from "@/app/(dashboard)/laporan/page";
 import PenggunaPage from "@/app/(dashboard)/pengguna/page";
@@ -18,6 +19,10 @@ export default function EnterprisePortalDynamicSubPage() {
   switch (pageParam) {
     case "beranda":
       return <DashboardPage />;
+    case "dokumen":
+      return <HibahTable />;
+    case "lemari":
+      return <DenahLemari />;
     case "hibah":
       return <HibahTable />;
     case "arsip":

@@ -1,16 +1,20 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import StatusBadge from "./status-badge";
 import {
   MailIcon,
   PencilIcon,
-  SearchIcon,
   TrashIcon,
   UserPlusIcon,
   XIcon,
 } from "./icons";
 import DeleteConfirmModal from "./delete-confirm-modal";
+import SearchInput from "./search-input";
+import FilterPill from "./filter-pill";
+import AccessDenied from "./access-denied";
+import { TableEmptyRow } from "./empty-state";
+import { getInitials } from "@/lib/utils";
 
 type User = {
   id: number;
@@ -33,22 +37,46 @@ const gradientMap: Record<string, string> = {
   "Bidang 4": "from-purple-600 to-indigo-800",
 };
 
+function normalizeRoleGroup(row: any): User["roleGroup"] {
+  const peran = (row.peran || "").toString().toLowerCase();
+  const jabatan = (row.jabatan || "").toString().toLowerCase();
+  const email = (row.email || "").toString().toLowerCase();
+  const combined = `${peran} ${jabatan} ${email}`;
+
+  if (combined.includes("bidang 1") || combined.includes("bidang1")) return "Bidang 1";
+  if (combined.includes("bidang 2") || combined.includes("bidang2")) return "Bidang 2";
+  if (combined.includes("bidang 3") || combined.includes("bidang3")) return "Bidang 3";
+  if (combined.includes("bidang 4") || combined.includes("bidang4")) return "Bidang 4";
+  if (peran === "admin" || combined.includes("admin")) return "Admin";
+
+  if (
+    row.peran === "Bidang 1" ||
+    row.peran === "Bidang 2" ||
+    row.peran === "Bidang 3" ||
+    row.peran === "Bidang 4"
+  ) {
+    return row.peran;
+  }
+  return "Admin";
+}
+
 function dbRowToUser(row: any): User {
-  const roleGroup = (row.peran as User["roleGroup"]) || "Admin";
+  const roleGroup = normalizeRoleGroup(row);
   const name = row.nama_pengguna || "";
-  const initials = name
-    .split(" ")
-    .map((w: string) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials =
+    name
+      .split(" ")
+      .map((w: string) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "US";
 
   return {
     id: row.id,
     name,
     email: row.email || "",
     roleGroup,
-    roleTitle: row.jabatan || `Staff ${roleGroup}`,
+    roleTitle: row.jabatan || (roleGroup === "Admin" ? "Administrator Sistem" : `Staff ${roleGroup}`),
     status: row.status || "Aktif",
     initials,
     gradient: gradientMap[roleGroup] || "from-zinc-500 to-zinc-700",
@@ -253,16 +281,12 @@ export default function UserTable() {
 
         {/* Search & Add */}
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari akun, email..."
-              className="h-9 w-44 rounded-xl border border-zinc-200 bg-zinc-50 pl-9 pr-4 text-xs outline-none transition focus:border-red-400 focus:bg-white sm:w-56"
-            />
-          </div>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Cari akun, email..."
+            className="w-44 sm:w-56"
+          />
 
           <button
             onClick={() => setShowAddModal(true)}
@@ -501,3 +525,6 @@ export default function UserTable() {
     </div>
   );
 }
+
+
+

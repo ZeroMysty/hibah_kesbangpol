@@ -3,14 +3,58 @@ import pool from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+let cachedJenisColumn: string | null = null;
+let cachedHasTahunCol: boolean | null = null;
+
+async function getJenisColumnName(): Promise<string> {
+  if (cachedJenisColumn) return cachedJenisColumn;
+  try {
+    const [cols]: any = await pool.query(
+      "SHOW COLUMNS FROM `data_hibah` LIKE 'jenis_dokumen_arsip'"
+    );
+    if (cols && cols.length > 0) {
+      cachedJenisColumn = "jenis_dokumen_arsip";
+      return cachedJenisColumn;
+    }
+  } catch (e) {
+    console.warn("Could not check column jenis_dokumen_arsip:", e);
+  }
+  cachedJenisColumn = "jenis_dokume_arsip";
+  return cachedJenisColumn;
+}
+
+async function checkHasTahunCol(): Promise<boolean> {
+  if (cachedHasTahunCol !== null) return cachedHasTahunCol;
+  try {
+    const [cols]: any = await pool.query(
+      "SHOW COLUMNS FROM `data_hibah` LIKE 'tahun_anggaran'"
+    );
+    cachedHasTahunCol = Boolean(cols && cols.length > 0);
+    return cachedHasTahunCol;
+  } catch {
+    return false;
+  }
+}
+
 // GET — ambil semua data hibah dari tabel data_hibah
 export async function GET() {
   try {
-    const [rows] = await pool.query(
+    const [rows]: any = await pool.query(
       "SELECT * FROM `data_hibah` ORDER BY id DESC"
     );
+
+    // Normalisasi field jenis_dokumen_arsip & jenis_dokume_arsip agar kompatibel dua arah
+    const normalized = (rows || []).map((row: any) => {
+      const name = row.jenis_dokumen_arsip ?? row.jenis_dokume_arsip ?? "";
+      return {
+        ...row,
+        jenis_dokumen_arsip: name,
+        jenis_dokume_arsip: name,
+      };
+    });
+
     return NextResponse.json(
-      { data: rows },
+      { data: normalized },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   } catch (error: any) {
@@ -27,6 +71,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
+      jenis_dokumen_arsip,
       jenis_dokume_arsip,
       nominal_diajukan,
       lembaga,
@@ -37,15 +82,28 @@ export async function POST(req: NextRequest) {
       kategori_program,
       nama_penanggung_jawab,
       scan_foto,
+      tahun_anggaran,
     } = body;
 
-    const [result]: any = await pool.query(
-      `INSERT INTO \`data_hibah\`
-        (jenis_dokume_arsip, nominal_diajukan, lembaga, tujuan_bidang_teknis,
-         lemari_arsip, posisi_rak, nomor_berkas, kategori_program, nama_penanggung_jawab, scan_foto)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        jenis_dokume_arsip ?? null,
+    const jenisCol = await getJenisColumnName();
+    const hasTahun = await checkHasTahunCol();
+
+    const namaBerkas = jenis_dokumen_arsip ?? jenis_dokume_arsip ?? null;
+    const tahun =
+      tahun_anggaran != null
+        ? String(tahun_anggaran)
+        : new Date().getFullYear().toString();
+
+    let queryStr = "";
+    let params: any[] = [];
+
+    if (hasTahun) {
+      queryStr = `INSERT INTO \`data_hibah\`
+        (\`${jenisCol}\`, nominal_diajukan, lembaga, tujuan_bidang_teknis,
+         lemari_arsip, posisi_rak, nomor_berkas, kategori_program, nama_penanggung_jawab, scan_foto, tahun_anggaran)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      params = [
+        namaBerkas,
         nominal_diajukan != null ? String(nominal_diajukan) : null,
         lembaga ?? null,
         tujuan_bidang_teknis != null ? String(tujuan_bidang_teknis) : null,
@@ -55,8 +113,28 @@ export async function POST(req: NextRequest) {
         kategori_program ?? null,
         nama_penanggung_jawab ?? null,
         scan_foto ?? null,
-      ]
-    );
+        tahun,
+      ];
+    } else {
+      queryStr = `INSERT INTO \`data_hibah\`
+        (\`${jenisCol}\`, nominal_diajukan, lembaga, tujuan_bidang_teknis,
+         lemari_arsip, posisi_rak, nomor_berkas, kategori_program, nama_penanggung_jawab, scan_foto)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      params = [
+        namaBerkas,
+        nominal_diajukan != null ? String(nominal_diajukan) : null,
+        lembaga ?? null,
+        tujuan_bidang_teknis != null ? String(tujuan_bidang_teknis) : null,
+        lemari_arsip ?? null,
+        posisi_rak ?? null,
+        nomor_berkas ?? null,
+        kategori_program ?? null,
+        nama_penanggung_jawab ?? null,
+        scan_foto ?? null,
+      ];
+    }
+
+    const [result]: any = await pool.query(queryStr, params);
 
     return NextResponse.json(
       { message: "Data hibah berhasil disimpan.", id: result.insertId },
@@ -91,7 +169,7 @@ export async function DELETE(req: NextRequest) {
     );
 
     if (rows && rows.length > 0) {
-      const nama = rows[0].jenis_dokume_arsip;
+      const nama = rows[0].jenis_dokumen_arsip || rows[0].jenis_dokume_arsip;
       if (nama) {
         // Hapus juga baris otomatis di tabel arsip yang sesuai nama usulan ini
         await pool.query(
@@ -127,6 +205,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const {
       id,
+      jenis_dokumen_arsip,
       jenis_dokume_arsip,
       nominal_diajukan,
       lembaga,
@@ -136,6 +215,8 @@ export async function PUT(req: NextRequest) {
       nomor_berkas,
       kategori_program,
       nama_penanggung_jawab,
+      tahun_anggaran,
+      scan_foto,
     } = body;
 
     if (!id) {
@@ -145,31 +226,128 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    await pool.query(
-      `UPDATE \`data_hibah\` SET
-        jenis_dokume_arsip = ?,
-        nominal_diajukan = ?,
-        lembaga = ?,
-        tujuan_bidang_teknis = ?,
-        lemari_arsip = ?,
-        posisi_rak = ?,
-        nomor_berkas = ?,
-        kategori_program = ?,
-        nama_penanggung_jawab = ?
-       WHERE id = ?`,
-      [
-        jenis_dokume_arsip,
-        nominal_diajukan != null ? String(nominal_diajukan) : null,
-        lembaga,
-        tujuan_bidang_teknis != null ? String(tujuan_bidang_teknis) : null,
-        lemari_arsip,
-        posisi_rak,
-        nomor_berkas,
-        kategori_program,
-        nama_penanggung_jawab,
-        id,
-      ]
-    );
+    const jenisCol = await getJenisColumnName();
+    const hasTahun = await checkHasTahunCol();
+    const namaBerkas = jenis_dokumen_arsip ?? jenis_dokume_arsip ?? null;
+    const hasScanFoto = scan_foto !== undefined;
+
+    if (hasTahun && tahun_anggaran != null) {
+      if (hasScanFoto) {
+        await pool.query(
+          `UPDATE \`data_hibah\` SET
+            \`${jenisCol}\` = ?,
+            nominal_diajukan = ?,
+            lembaga = ?,
+            tujuan_bidang_teknis = ?,
+            lemari_arsip = ?,
+            posisi_rak = ?,
+            nomor_berkas = ?,
+            kategori_program = ?,
+            nama_penanggung_jawab = ?,
+            tahun_anggaran = ?,
+            scan_foto = ?
+           WHERE id = ?`,
+          [
+            namaBerkas,
+            nominal_diajukan != null ? String(nominal_diajukan) : null,
+            lembaga,
+            tujuan_bidang_teknis != null ? String(tujuan_bidang_teknis) : null,
+            lemari_arsip,
+            posisi_rak,
+            nomor_berkas,
+            kategori_program,
+            nama_penanggung_jawab,
+            String(tahun_anggaran),
+            scan_foto ?? null,
+            id,
+          ]
+        );
+      } else {
+        await pool.query(
+          `UPDATE \`data_hibah\` SET
+            \`${jenisCol}\` = ?,
+            nominal_diajukan = ?,
+            lembaga = ?,
+            tujuan_bidang_teknis = ?,
+            lemari_arsip = ?,
+            posisi_rak = ?,
+            nomor_berkas = ?,
+            kategori_program = ?,
+            nama_penanggung_jawab = ?,
+            tahun_anggaran = ?
+           WHERE id = ?`,
+          [
+            namaBerkas,
+            nominal_diajukan != null ? String(nominal_diajukan) : null,
+            lembaga,
+            tujuan_bidang_teknis != null ? String(tujuan_bidang_teknis) : null,
+            lemari_arsip,
+            posisi_rak,
+            nomor_berkas,
+            kategori_program,
+            nama_penanggung_jawab,
+            String(tahun_anggaran),
+            id,
+          ]
+        );
+      }
+    } else {
+      if (hasScanFoto) {
+        await pool.query(
+          `UPDATE \`data_hibah\` SET
+            \`${jenisCol}\` = ?,
+            nominal_diajukan = ?,
+            lembaga = ?,
+            tujuan_bidang_teknis = ?,
+            lemari_arsip = ?,
+            posisi_rak = ?,
+            nomor_berkas = ?,
+            kategori_program = ?,
+            nama_penanggung_jawab = ?,
+            scan_foto = ?
+           WHERE id = ?`,
+          [
+            namaBerkas,
+            nominal_diajukan != null ? String(nominal_diajukan) : null,
+            lembaga,
+            tujuan_bidang_teknis != null ? String(tujuan_bidang_teknis) : null,
+            lemari_arsip,
+            posisi_rak,
+            nomor_berkas,
+            kategori_program,
+            nama_penanggung_jawab,
+            scan_foto ?? null,
+            id,
+          ]
+        );
+      } else {
+        await pool.query(
+          `UPDATE \`data_hibah\` SET
+            \`${jenisCol}\` = ?,
+            nominal_diajukan = ?,
+            lembaga = ?,
+            tujuan_bidang_teknis = ?,
+            lemari_arsip = ?,
+            posisi_rak = ?,
+            nomor_berkas = ?,
+            kategori_program = ?,
+            nama_penanggung_jawab = ?
+           WHERE id = ?`,
+          [
+            namaBerkas,
+            nominal_diajukan != null ? String(nominal_diajukan) : null,
+            lembaga,
+            tujuan_bidang_teknis != null ? String(tujuan_bidang_teknis) : null,
+            lemari_arsip,
+            posisi_rak,
+            nomor_berkas,
+            kategori_program,
+            nama_penanggung_jawab,
+            id,
+          ]
+        );
+      }
+    }
 
     return NextResponse.json({ message: "Data hibah berhasil diperbarui." });
   } catch (error: any) {

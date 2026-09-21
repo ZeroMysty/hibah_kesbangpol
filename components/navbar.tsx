@@ -4,11 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMode } from "@/context/mode-context";
+import { useHibah } from "@/context/hibah-context";
 import {
   ArchiveIcon,
   BuildingIcon,
   ChartIcon,
   DashboardIcon,
+  DocumentIcon,
   FolderIcon,
   HelpIcon,
   LogoutIcon,
@@ -26,18 +28,38 @@ export default function Navbar({ open, onClose }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { mode, currentUser, logout, getUrl } = useMode();
+  const { proposals } = useHibah();
 
   const isActive = (slug: string) => {
     const segments = pathname.split("/").filter(Boolean);
-    const currentSlug = segments[segments.length - 1] || "Beranda";
-    return currentSlug.toLowerCase() === slug.toLowerCase();
+    const currentSlug = (segments[segments.length - 1] || "Beranda").toLowerCase();
+    const target = slug.toLowerCase();
+    if (target === "beranda") {
+      return (
+        currentSlug === "beranda" ||
+        ["admin", "bidang1", "bidang2", "bidang3", "bidang4"].includes(currentSlug)
+      );
+    }
+    if (target === "dokumen") {
+      return currentSlug === "dokumen" || currentSlug === "hibah";
+    }
+    if (target === "lemari") {
+      return currentSlug === "lemari" || currentSlug === "arsip";
+    }
+    return currentSlug === target;
   };
 
   const mainMenu = [
     { name: "Beranda", slug: "Beranda", href: getUrl("Beranda"), icon: DashboardIcon },
-    { name: "Data Hibah", slug: "Hibah", href: getUrl("Hibah"), icon: FolderIcon, badge: "12" },
-    { name: "Arsip Dokumen", slug: "Arsip", href: getUrl("Arsip"), icon: ArchiveIcon, badge: "48" },
-    { name: "Lembaga & Ormas", slug: "Lembaga", href: getUrl("Lembaga"), icon: BuildingIcon },
+    {
+      name: "Daftar Dokumen",
+      slug: "Dokumen",
+      href: getUrl("Dokumen"),
+      icon: DocumentIcon,
+      badge: proposals.length > 0 ? String(proposals.length) : undefined,
+    },
+    { name: "Denah Lemari", slug: "Lemari", href: getUrl("Lemari"), icon: ArchiveIcon },
+    { name: "Penerima Hibah", slug: "Lembaga", href: getUrl("Lembaga"), icon: BuildingIcon },
     // Menu Laporan & Pengguna hanya tampil untuk mode admin, staff bidang tidak melihatnya sama sekali.
     ...(mode === "admin"
       ? [

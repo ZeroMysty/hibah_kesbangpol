@@ -58,7 +58,7 @@ export default function LoginPage() {
             Sistem Pengarsipan Hibah
           </h1>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-red-100/85">
-            Portal digital terpadu untuk pengarsipan naskah perjanjian hibah (NPHD), 
+            Portal digital terpadu untuk Pengarsipan Naskah Perjanjian Hibah Daerah (NPHD), 
             verifikasi berkas empat bidang teknis, dan pemantauan realisasi dana hibah daerah.
           </p>
         </div>

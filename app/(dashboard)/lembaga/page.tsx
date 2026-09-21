@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
@@ -19,6 +19,8 @@ import {
   XIcon,
 } from "@/components/icons";
 import DeleteConfirmModal from "@/components/delete-confirm-modal";
+import SearchInput from "@/components/search-input";
+import { TableEmptyRow } from "@/components/empty-state";
 
 type StatusLembaga = "Sedang Mengajukan" | "Terakhir Mengajukan";
 
@@ -354,7 +356,7 @@ export default function LembagaPage() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Ambil data mitra kerja dari database saat halaman dibuka
+  // Ambil data Penerima Hibah dari database saat halaman dibuka
   const fetchLembaga = async () => {
     setIsLoading(true);
     try {
@@ -430,7 +432,7 @@ export default function LembagaPage() {
     reader.readAsDataURL(file);
   };
 
-  // Tambah mitra kerja baru -> Simpan ke database MySQL
+  // Tambah Penerima Hibah baru -> Simpan ke database MySQL
   const handleAddLembaga = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nama.trim() || !singkatan.trim()) return;
@@ -467,7 +469,7 @@ export default function LembagaPage() {
         };
         setLembagaList([newItem, ...lembagaList]);
         setShowAddModal(false);
-        showToast(`Mitra kerja "${nama.trim()}" berhasil disimpan ke database.`);
+        showToast(`Penerima Hibah "${nama.trim()}" berhasil disimpan ke database.`);
 
         // Reset Form
         setNama("");
@@ -498,7 +500,7 @@ export default function LembagaPage() {
     setEditAlamat(item.alamat);
   };
 
-  // Simpan perubahan mitra kerja -> Update di database MySQL
+  // Simpan perubahan Penerima Hibah -> Update di database MySQL
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDetail || !editNama.trim() || !editSingkatan.trim()) return;
@@ -561,7 +563,7 @@ export default function LembagaPage() {
             setSelectedDetail(null);
             setIsEditing(false);
           }
-          showToast(`Mitra kerja "${target.nama}" berhasil dihapus dari database.`);
+          showToast(`Penerima Hibah "${target.nama}" berhasil dihapus dari database.`);
         } else {
           alert("Gagal menghapus data dari database.");
         }
@@ -592,7 +594,7 @@ export default function LembagaPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold text-zinc-500">Total Mitra Kerja</p>
+          <p className="text-xs font-semibold text-zinc-500">Total Penerima Hibah</p>
           <p className="mt-2 text-2xl font-bold text-zinc-900">{lembagaList.length}</p>
           <p className="mt-0.5 text-[11px] text-zinc-400">Dari semua bidang binaan</p>
         </div>
@@ -649,23 +651,19 @@ export default function LembagaPage() {
 
         {/* Search & Add Button on Right */}
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari nama / alamat / PIC..."
-              className="h-9 w-44 rounded-xl border border-zinc-200 bg-zinc-50 pl-9 pr-4 text-xs outline-none transition focus:border-red-400 focus:bg-white sm:w-60"
-            />
-          </div>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Cari nama / alamat / PIC..."
+            className="w-44 sm:w-60"
+          />
 
           <button
             onClick={() => setShowAddModal(true)}
             className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
           >
             <PlusIcon className="h-3.5 w-3.5" />
-            <span>Daftarkan Mitra Kerja</span>
+            <span>Daftarkan Penerima Hibah</span>
           </button>
         </div>
       </div>
@@ -676,7 +674,7 @@ export default function LembagaPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/70 text-[11px] uppercase tracking-wider text-zinc-400">
-                <th className="px-5 py-3.5 font-semibold">Mitra Kerja / Organisasi</th>
+                <th className="px-5 py-3.5 font-semibold">Penerima Hibah</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">Bidang</th>
                 <th className="px-5 py-3.5 font-semibold min-w-[220px]">Alamat</th>
                 <th className="px-5 py-3.5 font-semibold whitespace-nowrap">PIC / Kontak</th>
@@ -687,15 +685,15 @@ export default function LembagaPage() {
               {isLoading ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-14 text-center text-xs text-zinc-400">
-                    Memuat data mitra kerja dari database...
+                    Memuat data Penerima Hibah dari database...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-14 text-center text-sm text-zinc-400">
                     {lembagaList.length === 0
-                      ? "Belum ada data mitra kerja di database. Silakan klik 'Daftarkan Mitra Kerja'."
-                      : "Tidak ada mitra kerja yang sesuai dengan filter pencarian."}
+                      ? "Belum ada data Penerima Hibah di database. Silakan klik 'Daftarkan Penerima Hibah'."
+                      : "Tidak ada Penerima Hibah yang sesuai dengan filter pencarian."}
                   </td>
                 </tr>
               ) : (
@@ -755,7 +753,7 @@ export default function LembagaPage() {
                             setIsEditing(false);
                           }}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-colors shadow-xs whitespace-nowrap shrink-0"
-                          title="Lihat Detail Mitra Kerja"
+                          title="Lihat Detail Penerima Hibah"
                         >
                           <EyeIcon className="h-3.5 w-3.5" />
                           <span>Detail</span>
@@ -763,7 +761,7 @@ export default function LembagaPage() {
                         <button
                           onClick={() => handleDeletePrompt(item.id)}
                           className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"
-                          title="Hapus Mitra Kerja dari Database"
+                          title="Hapus Penerima Hibah dari Database"
                         >
                           <TrashIcon className="h-4 w-4" />
                         </button>
@@ -777,7 +775,7 @@ export default function LembagaPage() {
         </div>
       </div>
 
-      {/* Ringkasan Per Bidang — hanya tampil untuk Admin */}
+      {/* Ringkasan Per Bidang â€” hanya tampil untuk Admin */}
       {mode === "admin" && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {([1, 2, 3, 4] as BidangId[]).map((id) => {
@@ -799,7 +797,7 @@ export default function LembagaPage() {
                 </div>
                 <div className="space-y-1.5 pt-2 border-t border-zinc-100">
                   <div className="flex justify-between text-xs">
-                    <span className="text-zinc-500">Total Mitra Kerja</span>
+                    <span className="text-zinc-500">Total Penerima Hibah</span>
                     <span className="font-bold text-zinc-900">{items.length} organisasi</span>
                   </div>
                 </div>
@@ -837,7 +835,7 @@ export default function LembagaPage() {
                 )}
                 <div>
                   <h3 className="text-base font-bold text-zinc-900 leading-tight">
-                    {isEditing ? "Edit Data Mitra Kerja" : selectedDetail.nama}
+                    {isEditing ? "Edit Data Penerima Hibah" : selectedDetail.nama}
                   </h3>
                   <p className="text-xs text-zinc-500 mt-0.5">
                     {selectedDetail.singkatan} &bull; Bidang {selectedDetail.bidangId}
@@ -982,11 +980,11 @@ export default function LembagaPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-bold text-zinc-700">Alamat Mitra Kerja *</label>
+                  <label className="mb-1 block font-bold text-zinc-700">Alamat Penerima Hibah *</label>
                   <textarea
                     rows={2}
                     required
-                    placeholder="Alamat kantor / sekretariat mitra kerja..."
+                    placeholder="Alamat kantor / sekretariat Penerima Hibah..."
                     value={editAlamat}
                     onChange={(e) => setEditAlamat(e.target.value)}
                     className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
@@ -1041,7 +1039,7 @@ export default function LembagaPage() {
                   </div>
 
                   <div className="rounded-xl bg-zinc-50 p-3.5 border border-zinc-100 space-y-2">
-                    <span className="text-zinc-400 block text-[11px]">Alamat Mitra Kerja</span>
+                    <span className="text-zinc-400 block text-[11px]">Alamat Penerima Hibah</span>
                     <p className="font-medium text-zinc-800 flex items-start gap-2 leading-relaxed">
                       <MapPinIcon className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
                       {selectedDetail.alamat}
@@ -1097,7 +1095,7 @@ export default function LembagaPage() {
         </div>
       )}
 
-      {/* Modal Daftarkan Mitra Kerja Baru */}
+      {/* Modal Daftarkan Penerima Hibah Baru */}
       {showAddModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm overflow-y-auto"
@@ -1108,7 +1106,7 @@ export default function LembagaPage() {
             <div className="flex items-start justify-between border-b border-zinc-100 pb-4">
               <div>
                 <h3 className="text-xl font-bold text-zinc-900">
-                  Formulir Pendaftaran Mitra Kerja
+                  Formulir Pendaftaran Penerima Hibah
                 </h3>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   Registrasi organisasi / lembaga mitra binaan ke database Kesbangpol.
@@ -1123,10 +1121,10 @@ export default function LembagaPage() {
             </div>
 
             <form onSubmit={handleAddLembaga} className="mt-5 space-y-4">
-              {/* Upload Logo Mitra Kerja */}
+              {/* Upload Logo Penerima Hibah */}
               <div>
                 <label className="mb-1.5 block text-xs font-bold text-zinc-700">
-                  Logo Organisasi / Mitra Kerja (Opsional)
+                  Logo Organisasi / Penerima Hibah (Opsional)
                 </label>
                 <div className="flex items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/70 p-3.5 transition hover:border-red-300">
                   {logo ? (
@@ -1180,7 +1178,7 @@ export default function LembagaPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="sm:col-span-2">
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Nama Lengkap Organisasi / Mitra Kerja *
+                    Nama Lengkap Organisasi / Penerima Hibah *
                   </label>
                   <input
                     type="text"
@@ -1271,12 +1269,12 @@ export default function LembagaPage() {
 
               <div>
                 <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Alamat Mitra Kerja *
+                  Alamat Penerima Hibah *
                 </label>
                 <textarea
                   rows={2}
                   required
-                  placeholder="Alamat kantor / sekretariat mitra kerja..."
+                  placeholder="Alamat kantor / sekretariat Penerima Hibah..."
                   value={alamat}
                   onChange={(e) => setAlamat(e.target.value)}
                   className="w-full rounded-xl border border-zinc-200 px-3.5 py-2 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
@@ -1295,7 +1293,7 @@ export default function LembagaPage() {
                   type="submit"
                   className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98]"
                 >
-                  Daftarkan Mitra Kerja Baru
+                  Daftarkan Penerima Hibah Baru
                 </button>
               </div>
             </form>
@@ -1317,3 +1315,5 @@ export default function LembagaPage() {
     </div>
   );
 }
+
+

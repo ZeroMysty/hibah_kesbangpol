@@ -100,16 +100,26 @@ interface HibahContextType {
 const HibahContext = createContext<HibahContextType | undefined>(undefined);
 
 function dbRowToProposal(row: any): ProposalItem {
+  const proposalYear = row.tahun_anggaran
+    ? String(row.tahun_anggaran)
+    : row.created_at
+    ? new Date(row.created_at).getFullYear().toString()
+    : new Date().getFullYear().toString();
+
+  const formattedDate = row.created_at
+    ? new Date(row.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
+    : new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+
   return {
     id: row.id,
     dbId: row.id,
-    name: row.jenis_dokume_arsip || "",
+    name: row.jenis_dokumen_arsip || row.jenis_dokume_arsip || "",
     instansi: row.lembaga || "",
     bidangId: (Number(row.tujuan_bidang_teknis) as BidangId) || 1,
     kategori: row.kategori_program || "Seni Budaya",
     nominal: Number(String(row.nominal_diajukan).replace(/\D/g, "")) || 0,
-    tanggal: new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
-    tahun: new Date().getFullYear().toString(),
+    tanggal: formattedDate,
+    tahun: proposalYear,
     lemariArsip: (row.lemari_arsip as LemariArsip) || "Lemari Arsip 01",
     rakArsip: row.posisi_rak || "Rak 01",
     nomorArsip: row.nomor_berkas || "No. 01",
@@ -119,16 +129,21 @@ function dbRowToProposal(row: any): ProposalItem {
 }
 
 function dbRowToArsip(row: any): ArsipItem {
+  const arsipYear = row.tahun_anggaran ? String(row.tahun_anggaran) : new Date().getFullYear().toString();
+  const formattedDate = row.created_at
+    ? new Date(row.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
+    : new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+
   return {
     id: `arsip-db-${row.id}`,
     dbId: row.id,
-    kode: `ARS-B${row.bidang_pengampu || 1}-${row.tahun_anggaran || new Date().getFullYear()}-${row.id}`,
+    kode: `ARS-B${row.bidang_pengampu || 1}-${arsipYear}-${row.id}`,
     judul: row.judul_berkas_dokumen || "",
     instansi: row.instansi_penerima || "",
     bidangId: (Number(row.bidang_pengampu) as BidangId) || 1,
     jenis: (row.jenis_dokumen_arsip as ArsipItem["jenis"]) || "NPHD",
-    tahun: row.tahun_anggaran ? String(row.tahun_anggaran) : new Date().getFullYear().toString(),
-    tanggal: new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
+    tahun: arsipYear,
+    tanggal: formattedDate,
     ukuran: "—",
     lemariArsip: (row.lemari_arsip as LemariArsip) || "Lemari Arsip 01",
     rakArsip: row.posisi_rak || "Rak 01",
@@ -229,6 +244,7 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          jenis_dokumen_arsip: newP.name,
           jenis_dokume_arsip: newP.name,
           nominal_diajukan: String(newP.nominal),
           lembaga: newP.instansi,
@@ -239,6 +255,7 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
           kategori_program: newP.kategori,
           nama_penanggung_jawab: newP.pic || null,
           scan_foto: fileName || null,
+          tahun_anggaran: currentYear,
         }),
       });
 
@@ -348,12 +365,14 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
           lemari_arsip: newLemari,
           posisi_rak: newRak || proposal.rakArsip,
           nomor_berkas: newNomor || proposal.nomorArsip,
+          jenis_dokumen_arsip: proposal.name,
           jenis_dokume_arsip: proposal.name,
           nominal_diajukan: String(proposal.nominal),
           lembaga: proposal.instansi,
           tujuan_bidang_teknis: String(proposal.bidangId),
           kategori_program: proposal.kategori,
           nama_penanggung_jawab: proposal.pic,
+          tahun_anggaran: proposal.tahun,
         }),
       }).catch((err) => console.error("Gagal update lokasi hibah:", err));
     }
@@ -380,6 +399,7 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: merged.dbId || id,
+            jenis_dokumen_arsip: merged.name,
             jenis_dokume_arsip: merged.name,
             nominal_diajukan: String(merged.nominal),
             lembaga: merged.instansi,
@@ -389,6 +409,7 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
             nomor_berkas: merged.nomorArsip,
             kategori_program: merged.kategori,
             nama_penanggung_jawab: merged.pic,
+            tahun_anggaran: merged.tahun,
           }),
         });
       } catch (err) {

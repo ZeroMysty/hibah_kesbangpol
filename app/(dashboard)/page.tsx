@@ -1,11 +1,13 @@
-"use client";
+﻿"use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
-import { useHibah, LEMARI_OPTIONS } from "@/context/hibah-context";
+import { useHibah } from "@/context/hibah-context";
 import {
   ArchiveIcon,
   BuildingIcon,
+  ChartIcon,
   ChevronRightIcon,
   DocumentIcon,
   EyeIcon,
@@ -15,12 +17,12 @@ import {
   TrendUpIcon,
 } from "@/components/icons";
 import { LokasiArsipBadge } from "@/components/status-badge";
-
-const formatRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
+import { formatRupiah, formatShortRupiah, BIDANG_HEX } from "@/lib/utils";
 
 export default function DashboardPage() {
   const { mode, bidangId, getUrl } = useMode();
   const { proposals, arsipList } = useHibah();
+  const [filterBidangChart, setFilterBidangChart] = useState<BidangId | "Semua">("Semua");
 
   // Mode Bidang Filter
   const bidangProposals = proposals.filter((p) => p.bidangId === bidangId);
@@ -70,27 +72,6 @@ export default function DashboardPage() {
     },
   ];
 
-  // Lemari Distribution
-  const lemariColors: Record<string, string> = {
-    "Lemari Arsip 01": "#3b82f6",
-    "Lemari Arsip 02": "#e11d48",
-    "Lemari Arsip 03": "#f59e0b",
-    "Lemari Arsip 04": "#9333ea",
-    "Lemari Arsip Khusus": "#0d9488",
-  };
-
-  const donutSegments = LEMARI_OPTIONS.map((opt) => {
-    const count = proposals.filter((p) => p.lemariArsip === opt.id).length + arsipList.filter((a) => a.lemariArsip === opt.id).length;
-    const percentage = totalDokumen > 0 ? Math.round((count / totalDokumen) * 100) : 0;
-    return {
-      label: opt.label,
-      value: percentage,
-      count,
-      color: lemariColors[opt.id] || "#71717a",
-    };
-  });
-
-  const circumference = 2 * Math.PI * 52; // r=52
 
   return (
     <div className="space-y-6">
@@ -111,18 +92,18 @@ export default function DashboardPage() {
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
           <Link
-            href={getUrl("Hibah")}
+            href={getUrl("Dokumen")}
             className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-xs font-bold text-red-700 shadow-md transition hover:bg-red-50 active:scale-95"
           >
-            <PlusIcon className="h-4 w-4 text-red-600" />
-            <span>Kelola Lemari Arsip</span>
+            <DocumentIcon className="h-4 w-4 text-red-600" />
+            <span>Daftar Dokumen</span>
           </Link>
           <Link
-            href={getUrl("Arsip")}
+            href={getUrl("Lemari")}
             className="inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/20 active:scale-95"
           >
             <ArchiveIcon className="h-4 w-4" />
-            <span>Semua Berkas Arsip</span>
+            <span>Denah Lemari Arsip</span>
           </Link>
         </div>
       </div>
@@ -165,100 +146,162 @@ export default function DashboardPage() {
             })}
           </div>
 
-          {/* Donut Chart: Lemari Arsip Distribution */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm lg:col-span-2 flex flex-col justify-between">
-              <div>
-                <h2 className="text-base font-semibold">Ringkasan Sistem Pengarsipan</h2>
-                <p className="text-sm text-zinc-500">Kapasitas dan alur penyimpanan arsip hibah Kesbangpol</p>
-              </div>
+          {/* â”€â”€ Grafik Batang Per Tahun (Full Width, Mulai dari Kiri) â”€â”€â”€ */}
+          {(() => {
+            const allItems = [
+              ...proposals.map((p) => ({
+                tahun: p.tahun || p.tanggal?.slice(0, 4) || "",
+                bidangId: p.bidangId,
+                nominal: p.nominal || 0,
+              })),
+              ...arsipList.map((a) => ({
+                tahun: a.tahun || a.tanggal?.slice(0, 4) || "",
+                bidangId: a.bidangId,
+                nominal: (a as any).nominal || 0,
+              })),
+            ].filter((d) => d.tahun);
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6">
-                {([1, 2, 3, 4] as BidangId[]).map((id) => {
-                  const count = proposals.filter((p) => p.bidangId === id).length + arsipList.filter((a) => a.bidangId === id).length;
-                  return (
-                    <div key={id} className="rounded-xl border border-zinc-100 bg-zinc-50/70 p-3.5">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`h-2.5 w-2.5 rounded-full ${bidangInfo[id].color}`} />
-                        <p className="text-xs font-bold text-zinc-800">Bidang {id}</p>
-                      </div>
-                      <p className="text-xl font-black text-zinc-900">{count}</p>
-                      <p className="text-[10px] text-zinc-400 mt-0.5">Berkas Terarsip</p>
+            const filtered =
+              filterBidangChart === "Semua"
+                ? allItems
+                : allItems.filter((d) => d.bidangId === filterBidangChart);
+
+            // Tampilkan 5 tahun terakhir (misal: 2022 s/d 2026), plus tahun lain jika ada di data
+            const currentYear = new Date().getFullYear();
+            const defaultYears = Array.from({ length: 5 }, (_, i) => String(currentYear - 4 + i));
+            const allYearsSet = new Set([...defaultYears, ...allItems.map((d) => d.tahun)]);
+            const sortedYears = Array.from(allYearsSet).filter(Boolean).sort();
+
+            const bars = sortedYears.map((tahun) => {
+              const items = filtered.filter((d) => d.tahun === tahun);
+              return {
+                tahun,
+                jumlah: items.length,
+                nominal: items.reduce((sum, d) => sum + d.nominal, 0),
+              };
+            });
+
+            const maxJ = Math.max(...bars.map((b) => b.jumlah), 1);
+            const barColor =
+              filterBidangChart === "Semua" ? "#e11d48" : BIDANG_HEX[filterBidangChart];
+
+            return (
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm w-full">
+                {/* Header + Filter Buttons */}
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-xs">
+                      <ChartIcon className="h-5 w-5" />
                     </div>
-                  );
-                })}
-              </div>
+                    <div>
+                      <h2 className="text-base font-bold text-zinc-900">Rekapitulasi Dokumen Per Tahun</h2>
+                      <p className="text-xs text-zinc-500">
+                        {filterBidangChart === "Semua"
+                          ? "Semua bidang â€” 1 batang per tahun"
+                          : `Bidang ${filterBidangChart} (${bidangInfo[filterBidangChart].shortName})`}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-between text-xs text-zinc-500 border-t border-zinc-100 pt-3">
-                <span>Penyimpanan Berkas Fisik: Lemari 01 s/d 04 & Khusus</span>
-                <span className="font-semibold text-zinc-700">Tahun Anggaran 2026</span>
-              </div>
-            </div>
+                  {/* Filter Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {(["Semua", 1, 2, 3, 4] as (BidangId | "Semua")[]).map((b) => (
+                      <button
+                        key={String(b)}
+                        type="button"
+                        onClick={() => setFilterBidangChart(b)}
+                        className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                          filterBidangChart === b
+                            ? b === "Semua"
+                              ? "bg-red-600 text-white shadow-sm shadow-red-600/20"
+                              : "text-white shadow-sm"
+                            : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                        }`}
+                        style={
+                          filterBidangChart === b && b !== "Semua"
+                            ? { backgroundColor: BIDANG_HEX[b as BidangId] }
+                            : {}
+                        }
+                      >
+                        {b === "Semua" ? "Semua" : `Bidang ${b}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-semibold">Distribusi Lemari Arsip</h2>
-              <p className="text-sm text-zinc-500">Klasifikasi tempat penyimpanan</p>
-              <div className="relative mx-auto mt-6 h-44 w-44">
-                <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="52"
-                    fill="none"
-                    strokeWidth="14"
-                    className="stroke-zinc-100"
-                  />
-                  {donutSegments.map((seg, i) => {
-                    const dash = (seg.value / 100) * circumference;
-                    const prevOffset = donutSegments
-                      .slice(0, i)
-                      .reduce(
-                        (acc, s) => acc + (s.value / 100) * circumference,
-                        0
-                      );
-                    return (
-                      <circle
-                        key={seg.label}
-                        cx="60"
-                        cy="60"
-                        r="52"
-                        fill="none"
-                        strokeWidth="14"
-                        stroke={seg.color}
-                        strokeDasharray={`${dash} ${circumference - dash}`}
-                        strokeDashoffset={-prevOffset}
-                        strokeLinecap="round"
-                        className="transition-all duration-500"
-                      />
-                    );
-                  })}
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <p className="text-2xl font-bold">{totalDokumen}</p>
-                  <p className="text-xs text-zinc-500">Total Berkas</p>
+                {/* Full-width chart container with lines stretching 100% */}
+                <div className="relative w-full pt-6 pb-2">
+                  {/* Grid Lines across full 100% width */}
+                  <div className="relative h-48 w-full">
+                    {/* Top line (max) */}
+                    <div className="absolute inset-x-0 top-0 border-b border-dashed border-zinc-200 flex items-center justify-between pointer-events-none">
+                      <span className="text-[10px] font-semibold text-zinc-400 pl-1 -mt-3.5">{maxJ}</span>
+                    </div>
+                    {/* Mid line */}
+                    <div className="absolute inset-x-0 top-1/2 border-b border-dashed border-zinc-100 flex items-center justify-between pointer-events-none">
+                      <span className="text-[10px] font-semibold text-zinc-400 pl-1 -mt-3.5">{Math.round(maxJ / 2)}</span>
+                    </div>
+                    {/* Baseline */}
+                    <div className="absolute inset-x-0 bottom-0 border-b border-zinc-300 flex items-center justify-between pointer-events-none">
+                      <span className="text-[10px] font-semibold text-zinc-400 pl-1 -mt-3.5">0</span>
+                    </div>
+
+                    {/* Bars starting from the very left edge */}
+                    <div className="absolute inset-0 pl-10 pr-4 flex items-end justify-start gap-4 sm:gap-7 overflow-x-auto no-scrollbar">
+                      {bars.map((d) => {
+                        const heightPercent = maxJ > 0 ? (d.jumlah / maxJ) * 100 : 0;
+                        return (
+                          <div
+                            key={d.tahun}
+                            className="group relative flex flex-col items-center justify-end h-full w-14 sm:w-16 md:w-20 shrink-0 cursor-pointer"
+                          >
+                            {/* Hover tooltip */}
+                            <div className="pointer-events-none absolute -top-14 z-20 hidden group-hover:flex flex-col items-center rounded-xl bg-red-700 px-3 py-1.5 text-center text-white shadow-xl shadow-red-700/20">
+                              <span className="text-[11px] font-bold whitespace-nowrap">Tahun {d.tahun}</span>
+                              <span className="text-[10px] text-red-100 whitespace-nowrap">{d.jumlah} Berkas Hibah</span>
+                              <span className="text-[9px] text-red-200 whitespace-nowrap">{formatRupiah(d.nominal)}</span>
+                              <div className="absolute -bottom-1 h-2 w-2 rotate-45 bg-red-700" />
+                            </div>
+
+                            {/* Jumlah di atas batang */}
+                            <span
+                              className={`mb-1.5 text-xs font-black transition-transform group-hover:scale-110 ${
+                                d.jumlah > 0 ? "" : "text-zinc-300"
+                              }`}
+                              style={{ color: d.jumlah > 0 ? barColor : undefined }}
+                            >
+                              {d.jumlah}
+                            </span>
+
+                            {/* Batang */}
+                            <div
+                              className="w-full rounded-t-xl transition-all duration-300 group-hover:opacity-90 shadow-2xs"
+                              style={{
+                                height: d.jumlah > 0 ? `${Math.max(heightPercent, 8)}%` : "3px",
+                                backgroundColor: d.jumlah > 0 ? barColor : "#e4e4e7",
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Label Tahun & Nominal tepat di bawah batang, mulai dari kiri */}
+                  <div className="pl-10 pr-4 flex justify-start gap-4 sm:gap-7 pt-3 overflow-x-auto no-scrollbar">
+                    {bars.map((d) => (
+                      <div key={d.tahun} className="w-14 sm:w-16 md:w-20 shrink-0 text-center">
+                        <p className="text-xs font-bold text-zinc-800">{d.tahun}</p>
+                        <p className="text-[10px] text-zinc-400 font-medium truncate" title={formatRupiah(d.nominal)}>
+                          {d.nominal > 0 ? formatShortRupiah(d.nominal) : "Rp 0"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <ul className="mt-6 space-y-2">
-                {donutSegments.map((seg) => (
-                  <li
-                    key={seg.label}
-                    className="flex items-center justify-between text-xs text-zinc-600"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: seg.color }}
-                      />
-                      <span>{seg.label}</span>
-                    </div>
-                    <span className="font-semibold text-zinc-900">
-                      {seg.count} berkas ({seg.value}%)
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+            );
+          })()}
         </>
       )}
 
@@ -272,10 +315,10 @@ export default function DashboardPage() {
             </h2>
           </div>
           <Link
-            href={getUrl("Hibah")}
+            href={getUrl("Dokumen")}
             className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-500"
           >
-            Lihat semua lemari
+            Lihat semua dokumen
             <ChevronRightIcon className="h-4 w-4" />
           </Link>
         </div>
@@ -330,7 +373,7 @@ export default function DashboardPage() {
                   <td className="px-5 py-4 whitespace-nowrap text-left">
                     <div className="flex items-center justify-start gap-1.5">
                       <Link
-                        href={getUrl("Hibah")}
+                        href={getUrl("Dokumen")}
                         className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm whitespace-nowrap shrink-0"
                         title="Lihat Detail Dokumen"
                       >
@@ -355,3 +398,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+

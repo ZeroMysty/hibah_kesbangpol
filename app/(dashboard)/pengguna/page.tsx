@@ -1,13 +1,12 @@
-"use client";
+﻿"use client";
 
 // Halaman ini hanya boleh diakses oleh Admin. Staff bidang yang mencoba
 // membuka /pengguna langsung lewat URL (bukan cuma lewat klik sidebar)
 // akan tetap diarahkan ke tampilan "Akses Terbatas" ini.
 
-import Link from "next/link";
 import { useMode } from "../../../context/mode-context";
 import UserTable from "../../../components/user-table";
-import { LockIcon } from "../../../components/icons";
+import AccessDenied from "../../../components/access-denied";
 
 export default function PenggunaPage() {
   const { mode, getHomeUrl } = useMode();
