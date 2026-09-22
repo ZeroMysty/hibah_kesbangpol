@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
@@ -810,12 +810,12 @@ export default function LembagaPage() {
       {/* Modal Detail & Kelola (Edit / Hapus) */}
       {selectedDetail && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-xl rounded-3xl border border-zinc-200 bg-white p-6 sm:p-7 shadow-2xl my-8">
-            <div className="flex items-start justify-between border-b border-zinc-100 pb-4">
+          <div className="flex max-h-[90vh] w-full max-w-xl flex-col rounded-3xl border border-zinc-200 bg-white shadow-2xl overflow-hidden">
+            <div className="flex shrink-0 items-start justify-between border-b border-zinc-100 p-6 pb-4">
               <div className="flex items-center gap-3.5">
                 {selectedDetail.logo ? (
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm">
@@ -855,8 +855,9 @@ export default function LembagaPage() {
 
             {isEditing ? (
               /* Form Mode Edit */
-              <form onSubmit={handleSaveEdit} className="mt-5 space-y-4 text-xs">
-                {/* Upload / Ganti Logo */}
+              <form onSubmit={handleSaveEdit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+                  {/* Upload / Ganti Logo */}
                 <div>
                   <label className="mb-1.5 block font-bold text-zinc-700">Logo Organisasi</label>
                   <div className="flex items-center gap-4 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/70 p-3">
@@ -990,12 +991,13 @@ export default function LembagaPage() {
                     className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
                   />
                 </div>
+              </div>
 
-                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-zinc-100">
+              <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="rounded-xl border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition"
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition shadow-2xs"
                   >
                     Batal
                   </button>
@@ -1009,8 +1011,8 @@ export default function LembagaPage() {
               </form>
             ) : (
               /* View Mode Detail */
-              <>
-                <div className="mt-5 space-y-4 text-xs">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl bg-zinc-50 p-3.5 border border-zinc-100">
                       <span className="text-zinc-400 block text-[11px] mb-1">Bidang Pembina</span>
@@ -1061,7 +1063,7 @@ export default function LembagaPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-5 border-t border-zinc-100">
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
                   <button
                     type="button"
                     onClick={() => handleDeletePrompt(selectedDetail.id)}
@@ -1089,7 +1091,7 @@ export default function LembagaPage() {
                     </button>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -1098,12 +1100,12 @@ export default function LembagaPage() {
       {/* Modal Daftarkan Penerima Hibah Baru */}
       {showAddModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-2xl rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-2xl my-8">
-            <div className="flex items-start justify-between border-b border-zinc-100 pb-4">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl border border-zinc-200 bg-white shadow-2xl overflow-hidden">
+            <div className="flex shrink-0 items-start justify-between border-b border-zinc-100 p-6 pb-4">
               <div>
                 <h3 className="text-xl font-bold text-zinc-900">
                   Formulir Pendaftaran Penerima Hibah
@@ -1120,172 +1122,175 @@ export default function LembagaPage() {
               </button>
             </div>
 
-            <form onSubmit={handleAddLembaga} className="mt-5 space-y-4">
-              {/* Upload Logo Penerima Hibah */}
-              <div>
-                <label className="mb-1.5 block text-xs font-bold text-zinc-700">
-                  Logo Organisasi / Penerima Hibah (Opsional)
-                </label>
-                <div className="flex items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/70 p-3.5 transition hover:border-red-300">
-                  {logo ? (
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={logo}
-                        alt="Logo Preview"
-                        className="h-full w-full object-contain p-1"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-zinc-200/80 text-zinc-400">
-                      <BuildingIcon className="h-7 w-7" />
-                    </div>
-                  )}
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => addFileInputRef.current?.click()}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 transition shadow-2xs"
-                      >
-                        <UploadIcon className="h-4 w-4 text-zinc-500" />
-                        <span>{logo ? "Ganti File Logo" : "Pilih Logo"}</span>
-                      </button>
-                      {logo && (
+            <form onSubmit={handleAddLembaga} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* Upload Logo Penerima Hibah */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-zinc-700">
+                    Logo Organisasi / Penerima Hibah (Opsional)
+                  </label>
+                  <div className="flex items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/70 p-3.5 transition hover:border-red-300">
+                    {logo ? (
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={logo}
+                          alt="Logo Preview"
+                          className="h-full w-full object-contain p-1"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-zinc-200/80 text-zinc-400">
+                        <BuildingIcon className="h-7 w-7" />
+                      </div>
+                    )}
+                    <div className="flex-1 space-y-1.5">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => setLogo(undefined)}
-                          className="rounded-xl px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition"
+                          onClick={() => addFileInputRef.current?.click()}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 transition shadow-2xs"
                         >
-                          Hapus
+                          <UploadIcon className="h-4 w-4 text-zinc-500" />
+                          <span>{logo ? "Ganti File Logo" : "Pilih Logo"}</span>
                         </button>
-                      )}
+                        {logo && (
+                          <button
+                            type="button"
+                            onClick={() => setLogo(undefined)}
+                            className="rounded-xl px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition"
+                          >
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-zinc-400">
+                        Format PNG, JPG, atau JPEG (Maksimal 2 MB).
+                      </p>
+                      <input
+                        ref={addFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleLogoUpload(e, setLogo)}
+                      />
                     </div>
-                    <p className="text-[11px] text-zinc-400">
-                      Format PNG, JPG, atau JPEG (Maksimal 2 MB).
-                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-xs font-bold text-zinc-700">
+                      Nama Lengkap Organisasi / Penerima Hibah *
+                    </label>
                     <input
-                      ref={addFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleLogoUpload(e, setLogo)}
+                      type="text"
+                      required
+                      placeholder="Misal: Forum Pembauran Kebangsaan Kota"
+                      value={nama}
+                      onChange={(e) => setNama(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-zinc-700">
+                      Singkatan / Akronim *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="FPK"
+                      value={singkatan}
+                      onChange={(e) => setSingkatan(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs font-bold uppercase outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
                     />
                   </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="sm:col-span-2">
+                {/* Jenis Organisasi dengan Kategori Lengkap & Header Bold Non-Selectable */}
+                <div>
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Nama Lengkap Organisasi / Penerima Hibah *
+                    Jenis / Bentuk Organisasi *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Misal: Forum Pembauran Kebangsaan Kota"
-                    value={nama}
-                    onChange={(e) => setNama(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
-                  />
+                  <JenisOrganisasiDropdown value={jenisOrganisasi} onChange={setJenisOrganisasi} />
+                  {getJenisOrgDesc(jenisOrganisasi) && (
+                    <p className="mt-1.5 rounded-xl bg-zinc-50 p-2.5 text-[11px] text-zinc-500 border border-zinc-100 leading-relaxed">
+                      <span className="font-semibold text-zinc-700">Penjelasan:</span>{" "}
+                      {getJenisOrgDesc(jenisOrganisasi)}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-zinc-700">
+                      Bidang Pembina di Kesbangpol *
+                    </label>
+                    <select
+                      value={mode === "bidang" ? bidangId : bidang}
+                      disabled={mode === "bidang"}
+                      onChange={(e) => setBidang(Number(e.target.value) as BidangId)}
+                      className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400 disabled:bg-zinc-100"
+                    >
+                      {([1, 2, 3, 4] as BidangId[]).map((id) => (
+                        <option key={id} value={id}>
+                          Bidang {id} - {bidangInfo[id].fullName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-zinc-700">
+                      Nomor WhatsApp / Telp PIC *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="0812-xxxx-xxxx"
+                      value={noTelp}
+                      onChange={(e) => setNoTelp(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Singkatan / Akronim *
+                    Nama Ketua / Penanggung Jawab (PIC) *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="FPK"
-                    value={singkatan}
-                    onChange={(e) => setSingkatan(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs font-bold uppercase outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
-                  />
-                </div>
-              </div>
-
-              {/* Jenis Organisasi dengan Kategori Lengkap & Header Bold Non-Selectable */}
-              <div>
-                <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Jenis / Bentuk Organisasi *
-                </label>
-                <JenisOrganisasiDropdown value={jenisOrganisasi} onChange={setJenisOrganisasi} />
-                {getJenisOrgDesc(jenisOrganisasi) && (
-                  <p className="mt-1.5 rounded-xl bg-zinc-50 p-2.5 text-[11px] text-zinc-500 border border-zinc-100 leading-relaxed">
-                    <span className="font-semibold text-zinc-700">Penjelasan:</span>{" "}
-                    {getJenisOrgDesc(jenisOrganisasi)}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Bidang Pembina di Kesbangpol *
-                  </label>
-                  <select
-                    value={mode === "bidang" ? bidangId : bidang}
-                    disabled={mode === "bidang"}
-                    onChange={(e) => setBidang(Number(e.target.value) as BidangId)}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400 disabled:bg-zinc-100"
-                  >
-                    {([1, 2, 3, 4] as BidangId[]).map((id) => (
-                      <option key={id} value={id}>
-                        Bidang {id} - {bidangInfo[id].fullName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Nomor WhatsApp / Telp PIC *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="0812-xxxx-xxxx"
-                    value={noTelp}
-                    onChange={(e) => setNoTelp(e.target.value)}
+                    placeholder="Nama Lengkap & Gelar"
+                    value={pic}
+                    onChange={(e) => setPic(e.target.value)}
                     className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400"
                   />
                 </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-zinc-700">
+                    Alamat Penerima Hibah *
+                  </label>
+                  <textarea
+                    rows={2}
+                    required
+                    placeholder="Alamat kantor / sekretariat Penerima Hibah..."
+                    value={alamat}
+                    onChange={(e) => setAlamat(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Nama Ketua / Penanggung Jawab (PIC) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Nama Lengkap & Gelar"
-                  value={pic}
-                  onChange={(e) => setPic(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Alamat Penerima Hibah *
-                </label>
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="Alamat kantor / sekretariat Penerima Hibah..."
-                  value={alamat}
-                  onChange={(e) => setAlamat(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 px-3.5 py-2 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
+              {/* Sticky Footer */}
+              <div className="flex shrink-0 items-center justify-end gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition"
+                  className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition shadow-2xs"
                 >
                   Batal
                 </button>

@@ -425,9 +425,9 @@ export default function DenahLemari() {
       {/* ── Modal Detail Dokumen Fisik ───────────────────────────────── */}
       {activeModalDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-3xl border border-zinc-200 bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-zinc-100 pb-4">
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 p-6 pb-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600 shadow-xs">
                   <ArchiveIcon className="h-6 w-6" />
@@ -453,7 +453,7 @@ export default function DenahLemari() {
             </div>
 
             {/* Body Info */}
-            <div className="mt-4 space-y-3.5 text-xs">
+            <div className="flex-1 overflow-y-auto p-6 space-y-3.5 text-xs">
               {/* Box Label Ordner Preview */}
               <div className="rounded-2xl border border-zinc-200 bg-gradient-to-r from-zinc-50 to-white p-4">
                 <p className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">
@@ -533,13 +533,13 @@ export default function DenahLemari() {
             </div>
 
             {/* Footer Buttons */}
-            <div className="mt-5 border-t border-zinc-100 pt-4 flex justify-end gap-2">
+            <div className="flex shrink-0 justify-end gap-2 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
               <button
                 type="button"
                 onClick={() => {
                   window.print();
                 }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition shadow-2xs"
               >
                 <span>Cetak Label Rak</span>
               </button>

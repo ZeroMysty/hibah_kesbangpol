@@ -507,13 +507,13 @@ export default function HibahTable() {
       {/* ========================================================================= */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl bg-white shadow-2xl overflow-hidden">
+            <div className="flex shrink-0 items-start justify-between border-b border-zinc-100 p-6 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-zinc-900">
                   {mode === "bidang" ? "Ajukan Dokumen Hibah" : "Formulir Pengarsipan Hibah Baru"}
                 </h3>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-zinc-500 mt-0.5">
                   {mode === "bidang"
                     ? "Dokumen akan dikirim ke admin untuk direview sebelum disimpan ke storage."
                     : "Input data usulan hibah dan tentukan Lemari, Rak, serta Nomor penyimpanan berkas fisik & digital."}
@@ -521,13 +521,14 @@ export default function HibahTable() {
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition"
               >
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddProposal} className="space-y-4">
+            <form onSubmit={handleAddProposal} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div>
                 <label className="mb-1 block text-xs font-bold text-zinc-700">
                   Nama Program / Usulan Kegiatan Hibah *
@@ -735,52 +736,66 @@ export default function HibahTable() {
                   <span>Dokumen akan tersimpan di <strong>{newLemari} &bull; {newRak} &bull; {newNomor}</strong> dan terintegrasi otomatis ke sistem arsip digital.</span>
                 )}
               </div>
+            </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98] disabled:opacity-50"
-                >
-                  {isSubmitting
-                    ? (mode === "bidang" ? "Mengirim ke Admin..." : "Menyimpan & Mengarsipkan...")
-                    : (mode === "bidang" ? "Kirim ke Admin untuk Review" : "Simpan & Arsipkan Berkas")}
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="flex shrink-0 items-center justify-end gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition shadow-2xs"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98] disabled:opacity-50"
+              >
+                {isSubmitting
+                  ? (mode === "bidang" ? "Mengirim ke Admin..." : "Menyimpan & Mengarsipkan...")
+                  : (mode === "bidang" ? "Kirim ke Admin untuk Review" : "Simpan & Arsipkan Berkas")}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </div>
+    )}
 
       {/* ========================================================================= */}
       {/* Modal: Detail Dokumen & Berkas */}
       {/* ========================================================================= */}
       {selectedProposal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-start justify-between border-b border-zinc-100 pb-4 shrink-0">
+            <div className="flex shrink-0 items-start justify-between border-b border-zinc-100 p-6 pb-4">
               <div>
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white ${bidangInfo[selectedProposal.bidangId].color}`}>
-                    Bidang {selectedProposal.bidangId} - {bidangInfo[selectedProposal.bidangId].shortName}
-                  </span>
-                  <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600">
-                    {selectedProposal.kategori}
-                  </span>
-                  <RetentionBadge isOlder={isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal)} />
-                </div>
-                <h4 className="text-lg font-bold text-zinc-900 line-clamp-1">
-                  {selectedProposal.name}
-                </h4>
-                <p className="text-xs text-zinc-500 font-medium">{selectedProposal.instansi}</p>
+                {isEditing ? (
+                  <div>
+                    <h4 className="text-lg font-bold text-zinc-900">
+                      Edit Data Usulan & Lokasi Berkas
+                    </h4>
+                    <p className="text-xs text-zinc-500 font-medium mt-0.5">
+                      {selectedProposal.name} &bull; Bidang {selectedProposal.bidangId}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white ${bidangInfo[selectedProposal.bidangId].color}`}>
+                        Bidang {selectedProposal.bidangId} - {bidangInfo[selectedProposal.bidangId].shortName}
+                      </span>
+                      <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600">
+                        {selectedProposal.kategori}
+                      </span>
+                      <RetentionBadge isOlder={isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal)} />
+                    </div>
+                    <h4 className="text-lg font-bold text-zinc-900 line-clamp-1">
+                      {selectedProposal.name}
+                    </h4>
+                    <p className="text-xs text-zinc-500 font-medium">{selectedProposal.instansi}</p>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {mode === "admin" && !isEditing && (
@@ -798,7 +813,7 @@ export default function HibahTable() {
                       setEditNoTelp(selectedProposal.noTelp || "");
                       setEditCatatan(selectedProposal.catatan || "");
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition"
                   >
                     <PencilIcon className="h-3.5 w-3.5" />
                     Edit
@@ -806,51 +821,86 @@ export default function HibahTable() {
                 )}
                 <button
                   onClick={() => { setSelectedProposal(null); setIsEditing(false); }}
-                  className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                  className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition"
                 >
                   <XIcon className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            {/* Content Body */}
-            <div className="mt-4 flex-1 overflow-y-auto space-y-5 pr-1 text-xs">
-
-              {/* ---- Edit Panel ---- */}
-              {isEditing && (
-                <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
-                  <p className="text-xs font-bold text-blue-800 mb-1">Mode Edit â€” Ubah Data Usulan & Lokasi Lemari</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {isEditing ? (
+              /* ---- Form Mode Edit ---- */
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const updates = {
+                    name: editName,
+                    instansi: editInstansi,
+                    kategori: editKategori,
+                    nominal: parseFloat(editNominal) || selectedProposal.nominal,
+                    lemariArsip: editLemari,
+                    rakArsip: editRak,
+                    nomorArsip: editNomor,
+                    pic: editPic,
+                    noTelp: editNoTelp,
+                    catatan: editCatatan,
+                  };
+                  updateProposal(selectedProposal.id, updates);
+                  setSelectedProposal({ ...selectedProposal, ...updates });
+                  setIsEditing(false);
+                  showToast("Data & lokasi penyimpanan berhasil diperbarui.");
+                }}
+                className="flex min-h-0 flex-1 flex-col overflow-hidden"
+              >
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Nama Usulan</label>
-                      <input value={editName} onChange={e => setEditName(e.target.value)}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                      <label className="block text-xs font-bold text-zinc-700 mb-1">Nama Usulan Kegiatan *</label>
+                      <input
+                        required
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Penerima Hibah</label>
-                      <input value={editInstansi} onChange={e => setEditInstansi(e.target.value)}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                      <label className="block text-xs font-bold text-zinc-700 mb-1">Penerima Hibah / Lembaga *</label>
+                      <input
+                        required
+                        value={editInstansi}
+                        onChange={(e) => setEditInstansi(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Kategori</label>
-                      <input value={editKategori} onChange={e => setEditKategori(e.target.value)}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                      <label className="block text-xs font-bold text-zinc-700 mb-1">Kategori Kegiatan *</label>
+                      <input
+                        required
+                        value={editKategori}
+                        onChange={(e) => setEditKategori(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Nominal (angka)</label>
-                      <input type="number" value={editNominal} onChange={e => setEditNominal(e.target.value)}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                      <label className="block text-xs font-bold text-zinc-700 mb-1">Nominal Bantuan Hibah (Rp) *</label>
+                      <input
+                        type="number"
+                        required
+                        value={editNominal}
+                        onChange={(e) => setEditNominal(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
                     </div>
                   </div>
 
-                  {/* Lokasi Fisik Edit */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  {/* Lokasi Fisik */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Lemari Arsip</label>
+                      <label className="block text-xs font-bold text-zinc-700 mb-1">Lemari Arsip *</label>
                       <select
                         value={editLemari}
                         onChange={(e) => setEditLemari(e.target.value as LemariArsip)}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400"
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold outline-none focus:border-red-400"
                       >
                         {LEMARI_OPTIONS.map((opt) => (
                           <option key={opt.id} value={opt.id}>
@@ -860,11 +910,11 @@ export default function HibahTable() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Posisi Rak</label>
+                      <label className="block text-xs font-bold text-zinc-700 mb-1">Posisi Rak *</label>
                       <select
                         value={editRak}
                         onChange={(e) => setEditRak(e.target.value)}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400"
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold outline-none focus:border-red-400"
                       >
                         {RAK_OPTIONS.map((rak) => (
                           <option key={rak} value={rak}>
@@ -874,65 +924,70 @@ export default function HibahTable() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Nomor Berkas / Urut</label>
+                      <label className="block text-xs font-bold text-zinc-700 mb-1">Nomor Berkas / Urut *</label>
                       <input
+                        required
                         value={editNomor}
                         onChange={(e) => setEditNomor(e.target.value)}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono outline-none focus:border-blue-400"
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-xs font-bold font-mono outline-none focus:border-red-400"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">PIC / Kontak</label>
-                      <input value={editPic} onChange={e => setEditPic(e.target.value)}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                      <label className="block text-xs font-bold text-zinc-700 mb-1">Ketua / Penanggung Jawab (PIC)</label>
+                      <input
+                        value={editPic}
+                        onChange={(e) => setEditPic(e.target.value)}
+                        placeholder="Nama PIC"
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1">No. Telepon</label>
-                      <input value={editNoTelp} onChange={e => setEditNoTelp(e.target.value)}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                      <label className="block text-xs font-bold text-zinc-700 mb-1">No. WhatsApp / Telepon</label>
+                      <input
+                        value={editNoTelp}
+                        onChange={(e) => setEditNoTelp(e.target.value)}
+                        placeholder="0812-xxxx-xxxx"
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
                     </div>
                   </div>
+
                   <div>
-                    <label className="block text-[11px] font-semibold text-zinc-500 mb-1">Catatan</label>
-                    <textarea value={editCatatan} onChange={e => setEditCatatan(e.target.value)} rows={2}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 resize-none" />
-                  </div>
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      onClick={() => {
-                        const updates = {
-                          name: editName,
-                          instansi: editInstansi,
-                          kategori: editKategori,
-                          nominal: parseFloat(editNominal) || selectedProposal.nominal,
-                          lemariArsip: editLemari,
-                          rakArsip: editRak,
-                          nomorArsip: editNomor,
-                          pic: editPic,
-                          noTelp: editNoTelp,
-                          catatan: editCatatan,
-                        };
-                        updateProposal(selectedProposal.id, updates);
-                        setSelectedProposal({ ...selectedProposal, ...updates });
-                        setIsEditing(false);
-                        showToast("Data & lokasi penyimpanan berhasil diperbarui.");
-                      }}
-                      className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition"
-                    >
-                      Simpan Perubahan
-                    </button>
-                    <button
-                      onClick={() => setIsEditing(false)}
-                      className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition"
-                    >
-                      Batal
-                    </button>
+                    <label className="block text-xs font-bold text-zinc-700 mb-1">Catatan Dokumen</label>
+                    <textarea
+                      value={editCatatan}
+                      onChange={(e) => setEditCatatan(e.target.value)}
+                      rows={2}
+                      placeholder="Catatan tambahan ordner atau berkas..."
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 resize-none"
+                    />
                   </div>
                 </div>
-              )}
+
+                {/* Sticky Edit Footer */}
+                <div className="flex shrink-0 items-center justify-end gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition shadow-2xs"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98]"
+                  >
+                    Simpan Perubahan
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* ---- Mode View Detail ---- */
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
 
               {/* Metadata Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1156,40 +1211,42 @@ export default function HibahTable() {
                       </div>
                     </div>
                   )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sticky View Footer */}
+                <div className="flex shrink-0 items-center justify-between border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
+                  <button
+                    type="button"
+                    onClick={() => alert(`Mengunduh dokumen "${selectedProposal.fileName || selectedProposal.name}"...`)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition shadow-2xs"
+                  >
+                    <DownloadIcon className="h-3.5 w-3.5" />
+                    <span>Unduh Berkas Asli</span>
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(selectedProposal)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
+                      title="Hapus Usulan dari Database"
+                    >
+                      <TrashIcon className="h-3.5 w-3.5" />
+                      <span>Hapus Berkas</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedProposal(null); setIsEditing(false); }}
+                      className="rounded-xl bg-zinc-900 px-5 py-2 text-xs font-bold text-white hover:bg-zinc-800 transition"
+                    >
+                      Tutup
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between pt-4 border-t border-zinc-100 mt-4 shrink-0">
-              <button
-                type="button"
-                onClick={() => alert(`Mengunduh dokumen "${selectedProposal.fileName || selectedProposal.name}"...`)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
-              >
-                <DownloadIcon className="h-3.5 w-3.5" />
-                <span>Unduh Berkas Asli</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(selectedProposal)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
-                  title="Hapus Usulan dari Database"
-                >
-                  <TrashIcon className="h-3.5 w-3.5" />
-                  <span>Hapus Berkas</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedProposal(null); setIsEditing(false); }}
-                  className="rounded-xl bg-zinc-900 px-5 py-2 text-xs font-bold text-white hover:bg-zinc-800"
-                >
-                  Tutup
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}

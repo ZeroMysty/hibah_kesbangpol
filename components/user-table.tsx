@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import StatusBadge from "./status-badge";
@@ -89,6 +89,7 @@ export default function UserTable() {
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("Semua");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -187,37 +188,44 @@ export default function UserTable() {
     }
   };
 
-  // Edit jabatan pengguna -> Update ke tabel pengguna di MySQL
-  const handleEditJabatan = async (u: User) => {
-    const newTitle = prompt(`Ubah jabatan untuk ${u.name}:`, u.roleTitle);
-    if (!newTitle) return;
+  // Edit data pengguna -> Update ke tabel pengguna di MySQL
+  const handleSaveEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUser) return;
 
     try {
       const res = await fetch("/api/pengguna", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: u.id,
-          nama_pengguna: u.name,
-          email: u.email,
-          peran: u.roleGroup,
-          status: u.status,
-          jabatan: newTitle.trim(),
+          id: editUser.id,
+          nama_pengguna: editUser.name.trim(),
+          email: editUser.email.trim(),
+          peran: editUser.roleGroup,
+          status: editUser.status,
+          jabatan: editUser.roleTitle.trim(),
         }),
       });
 
       if (res.ok) {
         setUserList(
           userList.map((item) =>
-            item.id === u.id ? { ...item, roleTitle: newTitle.trim() } : item
+            item.id === editUser.id
+              ? {
+                  ...editUser,
+                  gradient: gradientMap[editUser.roleGroup] || item.gradient,
+                }
+              : item
           )
         );
-        showToast(`Jabatan "${u.name}" berhasil diperbarui di database.`);
+        showToast(`Data akun "${editUser.name}" berhasil diperbarui di database.`);
+        setEditUser(null);
       } else {
-        alert("Gagal memperbarui jabatan.");
+        const err = await res.json();
+        alert(`Gagal memperbarui pengguna: ${err.error || "Terjadi kesalahan"}`);
       }
     } catch (err) {
-      console.error("Gagal update jabatan:", err);
+      console.error("Gagal update pengguna:", err);
     }
   };
 
@@ -368,9 +376,9 @@ export default function UserTable() {
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => handleEditJabatan(u)}
-                          className="rounded-lg p-1.5 text-zinc-400 hover:bg-amber-50 hover:text-amber-600"
-                          title="Edit Jabatan"
+                          onClick={() => setEditUser({ ...u })}
+                          className="rounded-lg p-1.5 text-zinc-400 hover:bg-amber-50 hover:text-amber-600 transition"
+                          title="Edit Akun Pengguna"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </button>
@@ -394,12 +402,12 @@ export default function UserTable() {
       {/* Modal Tambah Pengguna Baru */}
       {showAddModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-lg rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-2xl my-8">
-            <div className="flex items-start justify-between border-b border-zinc-100 pb-4">
+          <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-3xl border border-zinc-200 bg-white shadow-2xl overflow-hidden">
+            <div className="flex shrink-0 items-start justify-between border-b border-zinc-100 p-6 pb-4">
               <div>
                 <h3 className="text-xl font-bold text-zinc-900">
                   Tambah Akun Pengguna Baru
@@ -416,7 +424,8 @@ export default function UserTable() {
               </button>
             </div>
 
-            <form onSubmit={handleAddUser} className="mt-5 space-y-4">
+            <form onSubmit={handleAddUser} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div>
                 <label className="mb-1 block text-xs font-bold text-zinc-700">
                   Nama Lengkap Pegawai / Pengguna *
@@ -490,12 +499,144 @@ export default function UserTable() {
                   className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
                 />
               </div>
+            </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
+            <div className="flex shrink-0 items-center justify-end gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition shadow-2xs"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98]"
+              >
+                Simpan Akun Pengguna
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      )}
+
+      {/* Modal Edit Akun Pengguna */}
+      {editUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-3xl border border-zinc-200 bg-white shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex shrink-0 items-start justify-between border-b border-zinc-100 p-6 pb-4">
+              <div>
+                <h3 className="text-xl font-bold text-zinc-900">
+                  Edit Akun Pengguna
+                </h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Perbarui informasi peran, jabatan, atau status akun pegawai.
+                </p>
+              </div>
+              <button
+                onClick={() => setEditUser(null)}
+                className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition"
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditUser} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-zinc-700">
+                    Nama Lengkap Pegawai / Pengguna *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editUser.name}
+                    onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
+                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-zinc-700">
+                    Email Kedinasan *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editUser.email}
+                    onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-zinc-700">
+                      Kelompok Peran *
+                    </label>
+                    <select
+                      value={editUser.roleGroup}
+                      onChange={(e) =>
+                        setEditUser({
+                          ...editUser,
+                          roleGroup: e.target.value as User["roleGroup"],
+                        })
+                      }
+                      className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
+                    >
+                      <option value="Admin">Admin Utama</option>
+                      <option value="Bidang 1">Bidang 1 (Wasbang)</option>
+                      <option value="Bidang 2">Bidang 2 (Poldagri & Ormas)</option>
+                      <option value="Bidang 3">Bidang 3 (Ekosodbud & Agama)</option>
+                      <option value="Bidang 4">Bidang 4 (Wasnas & Konflik)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-zinc-700">
+                      Status Akun *
+                    </label>
+                    <select
+                      value={editUser.status}
+                      onChange={(e) =>
+                        setEditUser({
+                          ...editUser,
+                          status: e.target.value as User["status"],
+                        })
+                      }
+                      className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
+                    >
+                      <option value="Aktif">Aktif</option>
+                      <option value="Nonaktif">Nonaktif</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-zinc-700">
+                    Jabatan / Penugasan Khusus
+                  </label>
+                  <input
+                    type="text"
+                    value={editUser.roleTitle}
+                    onChange={(e) => setEditUser({ ...editUser, roleTitle: e.target.value })}
+                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                  />
+                </div>
+              </div>
+
+              {/* Sticky Footer */}
+              <div className="flex shrink-0 items-center justify-end gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition"
+                  onClick={() => setEditUser(null)}
+                  className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition shadow-2xs"
                 >
                   Batal
                 </button>
@@ -503,7 +644,7 @@ export default function UserTable() {
                   type="submit"
                   className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98]"
                 >
-                  Simpan Akun Pengguna
+                  Simpan Perubahan
                 </button>
               </div>
             </form>
