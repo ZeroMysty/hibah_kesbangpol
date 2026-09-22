@@ -257,15 +257,47 @@ export default function HibahTable() {
         </div>
       )}
 
-      {/* Header Banner */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">
-            Daftar Dokumen Hibah
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-zinc-500">
-            Database seluruh berkas dokumen hibah yang telah diterima dan diarsipkan di Kesbangpol.
-          </p>
+      {/* ── Hero Banner ────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-red-700 via-red-600 to-rose-600 px-6 py-5 shadow-lg shadow-red-700/25">
+        {/* Dekorasi lingkaran */}
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-8 right-24 h-28 w-28 rounded-full bg-white/5" />
+
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Kiri — judul */}
+          <div>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold text-white/90">
+              <DocumentIcon className="h-3 w-3" />
+              Arsip Digital Hibah Kesbangpol
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              Daftar Dokumen Hibah
+            </h1>
+            <p className="mt-1 text-sm text-white/70">
+              Database seluruh berkas dokumen hibah yang telah diterima dan diarsipkan di Kesbangpol.
+            </p>
+          </div>
+
+          {/* Kanan — stat cards */}
+          <div className="flex items-center gap-3">
+            <div className="min-w-[90px] rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-center backdrop-blur-md">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-red-100">Total Berkas</p>
+              <p className="text-2xl font-black text-white">
+                {proposals.filter((p) => !isOlderThan5Years(p.tahun || p.tanggal)).length}
+              </p>
+            </div>
+            <div className="min-w-[90px] rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-center backdrop-blur-md">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-red-100">Total Nominal</p>
+              <p className="text-2xl font-black text-white">
+                {(() => {
+                  const total = proposals.filter((p) => !isOlderThan5Years(p.tahun || p.tanggal)).reduce((s, p) => s + (p.nominal || 0), 0);
+                  if (total >= 1_000_000_000) return `${(total / 1_000_000_000).toFixed(1)} M`;
+                  if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(0)} Jt`;
+                  return "—";
+                })()}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

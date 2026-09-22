@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMode } from "@/context/mode-context";
-import { useHibah } from "@/context/hibah-context";
 import { useReview } from "@/context/review-context";
 import {
   ArchiveIcon,
@@ -29,7 +28,6 @@ export default function Navbar({ open, onClose }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { mode, currentUser, logout, getUrl, bidangId } = useMode();
-  const { proposals } = useHibah();
   const { totalPendingCount, myReturned, bidangUnreadCount } = useReview();
 
   const isActive = (slug: string) => {
@@ -58,7 +56,6 @@ export default function Navbar({ open, onClose }: NavbarProps) {
       slug: "Dokumen",
       href: getUrl("Dokumen"),
       icon: DocumentIcon,
-      badge: proposals.length > 0 ? String(proposals.length) : undefined,
     },
     { name: "Denah Lemari", slug: "Lemari", href: getUrl("Lemari"), icon: ArchiveIcon },
     { name: "Penerima Hibah", slug: "Lembaga", href: getUrl("Lembaga"), icon: BuildingIcon },

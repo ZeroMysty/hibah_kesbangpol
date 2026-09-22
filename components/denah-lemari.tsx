@@ -273,10 +273,6 @@ export default function DenahLemari() {
                     {stats.count} Dokumen
                   </span>
                 </div>
-
-                {isSelected && (
-                  <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-600 ring-4 ring-red-100" />
-                )}
               </button>
             );
           })}
