@@ -93,6 +93,7 @@ interface HibahContextType {
   addArsip: (arsip: Omit<ArsipItem, "id">) => Promise<void>;
   updateArsipLokasi: (id: string, newLemari: LemariArsip, newRak?: string, newNomor?: string) => void;
   deleteArsip: (id: string) => Promise<void>;
+  isOlderThan8Years: (tahunStr: string | number) => boolean;
   isOlderThan5Years: (tahunStr: string | number) => boolean;
   refreshData: () => Promise<void>;
 }
@@ -158,12 +159,13 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
   const [arsipList, setArsipList] = useState<ArsipItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isOlderThan5Years = (tahunStr: string | number) => {
+  const isOlderThan8Years = (tahunStr: string | number) => {
     const currentYear = new Date().getFullYear();
     const docYear = typeof tahunStr === "string" ? parseInt(tahunStr, 10) : tahunStr;
     if (isNaN(docYear)) return false;
-    return currentYear - docYear >= 5;
+    return currentYear - docYear >= 8;
   };
+  const isOlderThan5Years = isOlderThan8Years;
 
   const refreshData = useCallback(async () => {
     setIsLoading(true);
@@ -537,6 +539,7 @@ export function HibahProvider({ children }: { children: React.ReactNode }) {
         addArsip,
         updateArsipLokasi,
         deleteArsip,
+        isOlderThan8Years,
         isOlderThan5Years,
         refreshData,
       }}

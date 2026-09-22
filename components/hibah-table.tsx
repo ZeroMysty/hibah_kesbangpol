@@ -50,6 +50,7 @@ export default function HibahTable() {
     updateProposal,
     updateProposalLokasi,
     deleteProposal,
+    isOlderThan8Years,
     isOlderThan5Years,
   } = useHibah();
 
@@ -283,14 +284,14 @@ export default function HibahTable() {
             <div className="min-w-[90px] rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-center backdrop-blur-md">
               <p className="text-[10px] uppercase font-bold tracking-wider text-red-100">Total Berkas</p>
               <p className="text-2xl font-black text-white">
-                {proposals.filter((p) => !isOlderThan5Years(p.tahun || p.tanggal)).length}
+                {proposals.filter((p) => !isOlderThan8Years(p.tahun || p.tanggal)).length}
               </p>
             </div>
             <div className="min-w-[90px] rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-center backdrop-blur-md">
               <p className="text-[10px] uppercase font-bold tracking-wider text-red-100">Total Nominal</p>
               <p className="text-2xl font-black text-white">
                 {(() => {
-                  const total = proposals.filter((p) => !isOlderThan5Years(p.tahun || p.tanggal)).reduce((s, p) => s + (p.nominal || 0), 0);
+                  const total = proposals.filter((p) => !isOlderThan8Years(p.tahun || p.tanggal)).reduce((s, p) => s + (p.nominal || 0), 0);
                   if (total >= 1_000_000_000) return `${(total / 1_000_000_000).toFixed(1)} M`;
                   if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(0)} Jt`;
                   return "—";
@@ -494,7 +495,7 @@ export default function HibahTable() {
         {/* Footer Summary */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-5 py-3 text-xs text-zinc-500 gap-2">
           <span>
-            Menampilkan <strong>{filtered.length}</strong> dari <strong>{proposals.length}</strong> usulan aktif (&le; 5 tahun)
+            Menampilkan <strong>{filtered.length}</strong> dari <strong>{proposals.length}</strong> usulan aktif (&le; 8 tahun)
           </span>
           <span className="text-[11px] font-medium text-zinc-400">
             Penyimpanan: 5 Lemari Arsip Aktif (Tersusun per Lemari, Rak, & Nomor Berkas)
@@ -1184,7 +1185,7 @@ export default function HibahTable() {
                               {selectedProposal.lemariArsip} &bull; {selectedProposal.rakArsip || "Rak 01"} &bull; {selectedProposal.nomorArsip || "No. 01"}
                             </span>
                           </p>
-                          <p><strong>Status Retensi:</strong> {isOlderThan5Years(selectedProposal.tahun || selectedProposal.tanggal) ? "Arsip Retensi (> 5 Tahun)" : "Arsip Aktif (â‰¤ 5 Tahun)"}</p>
+                          <p><strong>Status Retensi:</strong> {isOlderThan8Years(selectedProposal.tahun || selectedProposal.tanggal) ? "Arsip Retensi (> 8 Tahun)" : "Arsip Aktif (≤ 8 Tahun)"}</p>
                         </div>
                         <p className="text-zinc-600 text-[10px] italic">
                           Dokumen ini telah diarsipkan dan tersimpan secara sah ke dalam Sistem Pengarsipan Hibah Digital Bakesbangpol Kota Bandung.

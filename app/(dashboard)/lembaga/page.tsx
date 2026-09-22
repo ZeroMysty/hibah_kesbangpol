@@ -1382,5 +1382,3 @@ export default function LembagaPage() {
     </div>
   );
 }
-
-

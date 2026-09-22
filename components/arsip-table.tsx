@@ -60,7 +60,7 @@ const tahunList = [
 
 export default function ArsipTable() {
   const { mode, bidangId } = useMode();
-  const { arsipList, isLoading, addArsip, updateArsipLokasi, deleteArsip, isOlderThan5Years } = useHibah();
+  const { arsipList, isLoading, addArsip, updateArsipLokasi, deleteArsip, isOlderThan8Years } = useHibah();
 
   const [query, setQuery] = useState("");
   const [selectedJenis, setSelectedJenis] = useState("Semua");
@@ -69,7 +69,7 @@ export default function ArsipTable() {
   const [activeBidangFilter, setActiveBidangFilter] = useState<number | "Semua">(
     mode === "bidang" ? bidangId : "Semua"
   );
-  // Auto-hide documents older than 5 years by default
+  // Auto-hide documents older than 8 years by default
   const [showOlderDocs, setShowOlderDocs] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<ArsipItem | null>(null);
@@ -119,14 +119,14 @@ export default function ArsipTable() {
     }
   }, [mode, bidangId]);
 
-  // Count older documents (> 5 years)
+  // Count older documents (> 8 years)
   const totalOlderDocs = arsipList.filter((item) =>
-    isOlderThan5Years(item.tahun || item.tanggal)
+    isOlderThan8Years(item.tahun || item.tanggal)
   ).length;
 
   const filteredArsip = arsipList.filter((item) => {
-    const isOld = isOlderThan5Years(item.tahun || item.tanggal);
-    // Auto-hide documents older than 5 years if toggle is off
+    const isOld = isOlderThan8Years(item.tahun || item.tanggal);
+    // Auto-hide documents older than 8 years if toggle is off
     if (!showOlderDocs && isOld) {
       return false;
     }
@@ -244,8 +244,8 @@ export default function ArsipTable() {
           </p>
           <p className="mt-0.5 text-[11px] text-zinc-400">
             {showOlderDocs
-              ? "Semua arsip termasuk > 5 tahun"
-              : "Arsip aktif (â‰¤ 5 tahun)"}
+              ? "Semua arsip termasuk > 8 tahun"
+              : "Arsip aktif (≤ 8 tahun)"}
           </p>
         </div>
 
@@ -404,7 +404,7 @@ export default function ArsipTable() {
           </select>
         </div>
 
-        {/* Retention Filter Toggle (> 5 Tahun) */}
+        {/* Retention Filter Toggle (> 8 Tahun) */}
         {totalOlderDocs > 0 && (
           <>
             <div className="h-4 w-px bg-zinc-200 hidden sm:block" />
@@ -415,10 +415,10 @@ export default function ArsipTable() {
                   ? "border-amber-400 bg-amber-50 text-amber-900 shadow-sm"
                   : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
               }`}
-              title="Tampilkan atau sembunyikan arsip lebih dari 5 tahun"
+              title="Tampilkan atau sembunyikan arsip lebih dari 8 tahun"
             >
               <ArchiveIcon className="h-3.5 w-3.5 text-amber-600" />
-              <span>{showOlderDocs ? "Sembunyikan Arsip > 5 Thn" : `Arsip > 5 Thn (${totalOlderDocs})`}</span>
+              <span>{showOlderDocs ? "Sembunyikan Arsip > 8 Thn" : `Arsip > 8 Thn (${totalOlderDocs})`}</span>
             </button>
           </>
         )}
@@ -459,7 +459,7 @@ export default function ArsipTable() {
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {filteredArsip.map((item) => {
-                const isOld = isOlderThan5Years(item.tahun || item.tanggal);
+                const isOld = isOlderThan8Years(item.tahun || item.tanggal);
                 return (
                   <tr
                     key={item.id}
@@ -573,7 +573,7 @@ export default function ArsipTable() {
             berkas arsip digital
             {!showOlderDocs && totalOlderDocs > 0 && (
               <span className="text-amber-700 font-medium ml-1">
-                ({totalOlderDocs} dokumen &gt; 5 tahun disembunyikan otomatis)
+                ({totalOlderDocs} dokumen &gt; 8 tahun disembunyikan otomatis)
               </span>
             )}
           </p>
@@ -881,7 +881,7 @@ export default function ArsipTable() {
                   <span className="font-mono text-xs font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded">
                     {selectedDetail.kode}
                   </span>
-                  {isOlderThan5Years(selectedDetail.tahun || selectedDetail.tanggal) && (
+                  {isOlderThan8Years(selectedDetail.tahun || selectedDetail.tanggal) && (
                     <RetentionBadge isOlder={true} />
                   )}
                 </div>
@@ -1107,7 +1107,7 @@ export default function ArsipTable() {
                             <strong>Tahun Anggaran:</strong> T.A. {selectedDetail.tahun} ({selectedDetail.tanggal})
                           </p>
                           <p>
-                            <strong>Status Retensi:</strong> {isOlderThan5Years(selectedDetail.tahun || selectedDetail.tanggal) ? "Arsip Retensi (> 5 Tahun)" : "Arsip Aktif (â‰¤ 5 Tahun)"}
+                            <strong>Status Retensi:</strong> {isOlderThan8Years(selectedDetail.tahun || selectedDetail.tanggal) ? "Arsip Retensi (> 8 Tahun)" : "Arsip Aktif (≤ 8 Tahun)"}
                           </p>
                         </div>
                         <p className="text-zinc-600 text-[10px] italic">

@@ -57,11 +57,11 @@ function BarChart({ data, filterBidang }: { data: BarDatum[]; filterBidang: Bida
         <div className="absolute inset-x-0 bottom-0 border-b border-zinc-300 flex items-center pointer-events-none">
           <span className="text-[10px] font-semibold text-zinc-400 pl-1 -mt-3.5">0</span>
         </div>
-        <div className="absolute inset-0 pl-10 pr-4 flex items-end justify-start gap-4 sm:gap-7 overflow-x-auto no-scrollbar">
+        <div className="absolute inset-0 pl-10 pr-4 flex items-end justify-between gap-2 sm:gap-4">
           {data.map((d) => {
             const heightPercent = maxJumlah > 0 ? (d.jumlah / maxJumlah) * 100 : 0;
             return (
-              <div key={d.tahun} className="group relative flex flex-col items-center justify-end h-full w-14 sm:w-16 md:w-20 shrink-0 cursor-pointer">
+              <div key={d.tahun} className="group relative flex-1 flex flex-col items-center justify-end h-full cursor-pointer min-w-0">
                 <div className="pointer-events-none absolute -top-14 z-20 hidden group-hover:flex flex-col items-center rounded-xl bg-red-700 px-3 py-1.5 text-center text-white shadow-xl shadow-red-700/20">
                   <span className="text-[11px] font-bold whitespace-nowrap">Tahun {d.tahun}</span>
                   <span className="text-[10px] text-red-100 whitespace-nowrap">{d.jumlah} Berkas Hibah</span>
@@ -71,16 +71,16 @@ function BarChart({ data, filterBidang }: { data: BarDatum[]; filterBidang: Bida
                 <span className={`mb-1.5 text-xs font-black transition-transform group-hover:scale-110 ${d.jumlah > 0 ? "" : "text-zinc-300"}`} style={{ color: d.jumlah > 0 ? barColor : undefined }}>
                   {d.jumlah}
                 </span>
-                <div className="w-full rounded-t-xl transition-all duration-300 group-hover:opacity-90 shadow-2xs" style={{ height: d.jumlah > 0 ? `${Math.max(heightPercent, 8)}%` : "3px", backgroundColor: d.jumlah > 0 ? barColor : "#e4e4e7" }} />
+                <div className="w-full max-w-[48px] sm:max-w-[64px] rounded-t-xl transition-all duration-300 group-hover:opacity-90 shadow-2xs" style={{ height: d.jumlah > 0 ? `${Math.max(heightPercent, 8)}%` : "3px", backgroundColor: d.jumlah > 0 ? barColor : "#e4e4e7" }} />
               </div>
             );
           })}
         </div>
       </div>
-      <div className="pl-10 pr-4 flex justify-start gap-4 sm:gap-7 pt-3 overflow-x-auto no-scrollbar">
+      <div className="pl-10 pr-4 flex items-start justify-between gap-2 sm:gap-4 pt-3">
         {data.map((d) => (
-          <div key={d.tahun} className="w-14 sm:w-16 md:w-20 shrink-0 text-center">
-            <p className="text-xs font-bold text-zinc-800">{d.tahun}</p>
+          <div key={d.tahun} className="flex-1 text-center min-w-0">
+            <p className="text-xs font-bold text-zinc-800 truncate">{d.tahun}</p>
             <p className="text-[10px] text-zinc-400 font-medium truncate" title={formatRupiah(d.nominal)}>
               {d.nominal > 0 ? formatShortRupiah(d.nominal) : "Rp 0"}
             </p>
@@ -223,7 +223,7 @@ export default function LaporanPage() {
     [filterBidang, proposals.length, arsipList.length]
   );
   const currentYear = new Date().getFullYear();
-  const defaultYears = Array.from({ length: 5 }, (_, i) => String(currentYear - 4 + i));
+  const defaultYears = Array.from({ length: 8 }, (_, i) => String(currentYear - 7 + i));
   const allYearsSet = new Set([...defaultYears, ...allItems.map((d) => d.tahun)]);
   const sortedYears = Array.from(allYearsSet).filter((t) => t && t !== "—").sort();
   const chartData: BarDatum[] = sortedYears.map((tahun) => {

@@ -38,14 +38,14 @@ export function RetentionBadge({ isOlder }: { isOlder: boolean }) {
   if (isOlder) {
     return (
       <span className="inline-flex items-center gap-1 rounded-md bg-amber-100/80 px-2 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-inset ring-amber-600/20 whitespace-nowrap shrink-0">
-        <span>&gt; 5 Thn (Retensi)</span>
+        <span>&gt; 8 Thn (Retensi)</span>
       </span>
     );
   }
 
   return (
     <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20 whitespace-nowrap shrink-0">
-      <span>Aktif (&le; 5 Thn)</span>
+      <span>Aktif (&le; 8 Thn)</span>
     </span>
   );
 }
