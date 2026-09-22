@@ -8,6 +8,7 @@ import {
   CheckCircleIcon,
   ChevronDownIcon,
   ClockIcon,
+  DownloadIcon,
   EyeIcon,
   MapPinIcon,
   PencilIcon,
@@ -573,8 +574,48 @@ export default function LembagaPage() {
     }
   };
 
-  const totalSedang = lembagaList.filter((l) => l.status === "Sedang Mengajukan").length;
-  const totalTerakhir = lembagaList.filter((l) => l.status === "Terakhir Mengajukan").length;
+  const handleExportCsv = () => {
+    const headers = [
+      "No",
+      "Nama Lembaga / Ormas",
+      "Singkatan",
+      "Jenis Organisasi",
+      "Bidang",
+      "Alamat Sekretariat",
+      "Nama Ketua / PIC",
+      "Nomor Kontak",
+      "Status",
+      "Tahun",
+    ];
+
+    const rows = filtered.map((item, index) => [
+      index + 1,
+      `"${(item.nama || "").replace(/"/g, '""')}"`,
+      `"${(item.singkatan || "").replace(/"/g, '""')}"`,
+      `"${(item.jenisOrganisasi || "").replace(/"/g, '""')}"`,
+      `"Bidang ${item.bidangId} - ${(bidangInfo[item.bidangId]?.shortName || "").replace(/"/g, '""')}"`,
+      `"${(item.alamat || "").replace(/"/g, '""')}"`,
+      `"${(item.pic || "").replace(/"/g, '""')}"`,
+      `"${(item.noTelp || "-").replace(/"/g, '""')}"`,
+      `"${(item.status || "-").replace(/"/g, '""')}"`,
+      `"${(item.tahun || "-").replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent =
+      "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `data_penerima_hibah_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
@@ -591,76 +632,128 @@ export default function LembagaPage() {
         </div>
       )}
 
-      {/* Stats Cards */}
+      {/* Stats Cards: Total Penerima Hibah per Bidang */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold text-zinc-500">Total Penerima Hibah</p>
-          <p className="mt-2 text-2xl font-bold text-zinc-900">{lembagaList.length}</p>
-          <p className="mt-0.5 text-[11px] text-zinc-400">Dari semua bidang binaan</p>
-        </div>
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
-          <p className="text-xs font-semibold text-amber-700">Sedang Mengajukan</p>
-          <p className="mt-2 text-2xl font-bold text-amber-700">{totalSedang}</p>
-          <p className="mt-0.5 text-[11px] text-amber-500">Proposal aktif dalam proses</p>
-        </div>
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
-          <p className="text-xs font-semibold text-emerald-700">Pernah Mengajukan</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-700">{totalTerakhir}</p>
-          <p className="mt-0.5 text-[11px] text-emerald-500">Riwayat disetujui / selesai</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold text-zinc-500">Bidang Pembina</p>
-          <p className="mt-2 text-2xl font-bold text-zinc-900">4 Bidang</p>
-          <p className="mt-0.5 text-[11px] text-zinc-400">Bakesbangpol</p>
-        </div>
+        {([1, 2, 3, 4] as BidangId[]).map((id) => {
+          const count = lembagaList.filter((l) => l.bidangId === id).length;
+          const info = bidangInfo[id];
+          const isSelected = filterBidang === id;
+
+          const colorTheme: Record<
+            BidangId,
+            {
+              border: string;
+              bg: string;
+              text: string;
+              badge: string;
+              activeRing: string;
+            }
+          > = {
+            1: {
+              border: "border-blue-200 hover:border-blue-300",
+              bg: "bg-blue-50/40",
+              text: "text-blue-700",
+              badge: "bg-blue-600 text-white",
+              activeRing: "ring-2 ring-blue-500/40 border-blue-500 bg-blue-50/70 shadow-md",
+            },
+            2: {
+              border: "border-red-200 hover:border-red-300",
+              bg: "bg-red-50/40",
+              text: "text-red-700",
+              badge: "bg-red-600 text-white",
+              activeRing: "ring-2 ring-red-500/40 border-red-500 bg-red-50/70 shadow-md",
+            },
+            3: {
+              border: "border-amber-200 hover:border-amber-300",
+              bg: "bg-amber-50/40",
+              text: "text-amber-700",
+              badge: "bg-amber-600 text-white",
+              activeRing: "ring-2 ring-amber-500/40 border-amber-500 bg-amber-50/70 shadow-md",
+            },
+            4: {
+              border: "border-purple-200 hover:border-purple-300",
+              bg: "bg-purple-50/40",
+              text: "text-purple-700",
+              badge: "bg-purple-600 text-white",
+              activeRing: "ring-2 ring-purple-500/40 border-purple-500 bg-purple-50/70 shadow-md",
+            },
+          };
+
+          const theme = colorTheme[id];
+
+          return (
+            <div
+              key={id}
+              onClick={() => {
+                if (mode === "admin") {
+                  setFilterBidang(filterBidang === id ? "Semua" : id);
+                }
+              }}
+              className={`rounded-2xl border p-4 shadow-xs transition-all duration-200 ${
+                mode === "admin" ? "cursor-pointer hover:shadow-md" : ""
+              } ${
+                isSelected
+                  ? theme.activeRing
+                  : `${theme.border} ${theme.bg} bg-white`
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${theme.badge}`}>
+                  Bidang {id}
+                </span>
+                <span className="text-[11px] font-bold text-zinc-400">
+                  {lembagaList.length > 0
+                    ? `${Math.round((count / lembagaList.length) * 100)}%`
+                    : "0%"}
+                </span>
+              </div>
+              <p className={`mt-2.5 text-2xl font-black ${theme.text}`}>
+                {count}{" "}
+                <span className="text-xs font-semibold text-zinc-500">Penerima</span>
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-zinc-600 line-clamp-1" title={info.fullName}>
+                {info.fullName}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Filter & Action Bar */}
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
-        <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Filter:</span>
-        {mode === "admin" ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-500">Bidang:</span>
-            <select
-              value={filterBidang === "Semua" ? "Semua" : String(filterBidang)}
-              onChange={(e) =>
-                setFilterBidang(
-                  e.target.value === "Semua" ? "Semua" : (Number(e.target.value) as BidangId)
-                )
-              }
-              className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
-            >
-              <option value="Semua">Semua Bidang</option>
-              {([1, 2, 3, 4] as BidangId[]).map((id) => (
-                <option key={id} value={String(id)}>
-                  {bidangInfo[id].shortName}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-500">Bidang:</span>
-            <span
-              className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-bold text-white shadow-sm ${bidangInfo[bidangId].color}`}
-            >
-              Bidang {bidangId}
-            </span>
-          </div>
-        )}
-
-        {/* Search & Add Button on Right */}
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+      {/* Action Bar: Search on Left, Export & Add on Right */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
           <SearchInput
             value={query}
             onChange={setQuery}
             placeholder="Cari nama / alamat / PIC..."
-            className="w-44 sm:w-60"
+            className="w-56 sm:w-80"
           />
+          {mode === "admin" && filterBidang !== "Semua" && (
+            <button
+              onClick={() => setFilterBidang("Semua")}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100"
+              title="Klik untuk menghapus filter bidang"
+            >
+              <span>Bidang {filterBidang}</span>
+              <XIcon className="h-3 w-3 text-zinc-400 hover:text-zinc-700" />
+            </button>
+          )}
+        </div>
+
+        {/* Export & Add Button on Right */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleExportCsv}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 text-xs font-semibold text-zinc-700 shadow-xs transition hover:bg-zinc-50 hover:text-zinc-900 active:scale-[0.98]"
+            title="Export Data Penerima Hibah ke CSV"
+          >
+            <DownloadIcon className="h-3.5 w-3.5 text-zinc-500" />
+            <span>Export</span>
+          </button>
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
           >
             <PlusIcon className="h-3.5 w-3.5" />
             <span>Daftarkan Penerima Hibah</span>
@@ -775,37 +868,6 @@ export default function LembagaPage() {
         </div>
       </div>
 
-      {/* Ringkasan Per Bidang â€” hanya tampil untuk Admin */}
-      {mode === "admin" && (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {([1, 2, 3, 4] as BidangId[]).map((id) => {
-            const items = lembagaList.filter((l) => l.bidangId === id);
-            return (
-              <div key={id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-2.5 mb-3">
-                  <span
-                    className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black text-white ${bidangInfo[id].color}`}
-                  >
-                    {id}
-                  </span>
-                  <div>
-                    <p className="text-xs font-bold text-zinc-900">Bidang {id}</p>
-                    <p className="text-[10px] text-zinc-400 line-clamp-1">
-                      {bidangInfo[id].fullName}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-1.5 pt-2 border-t border-zinc-100">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-zinc-500">Total Penerima Hibah</span>
-                    <span className="font-bold text-zinc-900">{items.length} organisasi</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Modal Detail & Kelola (Edit / Hapus) */}
       {selectedDetail && (

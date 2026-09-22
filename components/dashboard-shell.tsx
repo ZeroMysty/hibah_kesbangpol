@@ -147,8 +147,7 @@ export default function DashboardShell({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari data..."
-              className="h-9 w-52 rounded-xl border border-zinc-200 bg-zinc-50 pl-9 pr-4 text-sm outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white focus:w-64"
-              style={{ transition: "width 0.2s" }}
+              className="h-9 w-60 rounded-xl border border-zinc-200 bg-zinc-50 pl-9 pr-4 text-xs outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white"
             />
           </form>
 

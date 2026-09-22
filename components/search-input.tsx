@@ -1,4 +1,4 @@
-﻿import { SearchIcon } from "./icons";
+import { SearchIcon } from "./icons";
 
 type SearchInputProps = {
   value: string;
@@ -31,7 +31,7 @@ export default function SearchInput({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-9 pr-3.5 text-xs outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+        className="h-9 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3.5 text-xs outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
       />
     </div>
   );

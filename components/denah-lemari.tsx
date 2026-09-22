@@ -323,7 +323,7 @@ export default function DenahLemari() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari berkas di lemari ini..."
-                className="h-10 w-44 rounded-xl border border-zinc-200 bg-white pl-9 pr-4 text-xs outline-none transition focus:border-red-500 focus:w-60 sm:w-52"
+                className="h-10 w-52 sm:w-60 rounded-xl border border-zinc-200 bg-white pl-9 pr-4 text-xs outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
               />
             </div>
           </div>

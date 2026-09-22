@@ -410,7 +410,7 @@ export default function ArsipTable() {
             <div className="h-4 w-px bg-zinc-200 hidden sm:block" />
             <button
               onClick={() => setShowOlderDocs(!showOlderDocs)}
-              className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition border ${
+              className={`inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition border ${
                 showOlderDocs
                   ? "border-amber-400 bg-amber-50 text-amber-900 shadow-sm"
                   : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
@@ -433,7 +433,7 @@ export default function ArsipTable() {
           />
           <button
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
           >
             <PlusIcon className="h-3.5 w-3.5" />
             <span>Tambah Arsip</span>
