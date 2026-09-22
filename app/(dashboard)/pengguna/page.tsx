@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 // Halaman ini hanya boleh diakses oleh Admin. Staff bidang yang mencoba
 // membuka /pengguna langsung lewat URL (bukan cuma lewat klik sidebar)
@@ -7,6 +7,9 @@
 import { useMode } from "../../../context/mode-context";
 import UserTable from "../../../components/user-table";
 import AccessDenied from "../../../components/access-denied";
+import { LockIcon } from "../../../components/icons";
+import Link from "next/link";
+
 
 export default function PenggunaPage() {
   const { mode, getHomeUrl } = useMode();

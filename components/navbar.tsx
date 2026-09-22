@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMode } from "@/context/mode-context";
 import { useHibah } from "@/context/hibah-context";
+import { useReview } from "@/context/review-context";
 import {
   ArchiveIcon,
   BuildingIcon,
@@ -27,8 +28,9 @@ type NavbarProps = {
 export default function Navbar({ open, onClose }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { mode, currentUser, logout, getUrl } = useMode();
+  const { mode, currentUser, logout, getUrl, bidangId } = useMode();
   const { proposals } = useHibah();
+  const { totalPendingCount, myReturned, bidangUnreadCount } = useReview();
 
   const isActive = (slug: string) => {
     const segments = pathname.split("/").filter(Boolean);
@@ -63,10 +65,31 @@ export default function Navbar({ open, onClose }: NavbarProps) {
     // Menu Laporan & Pengguna hanya tampil untuk mode admin, staff bidang tidak melihatnya sama sekali.
     ...(mode === "admin"
       ? [
-          { name: "Laporan", slug: "Laporan", href: getUrl("Laporan"), icon: ChartIcon },
+          {
+            name: "Laporan",
+            slug: "Laporan",
+            href: getUrl("Laporan"),
+            icon: ChartIcon,
+            badge: totalPendingCount > 0 ? String(totalPendingCount) : undefined,
+            badgeColor: "bg-red-600",
+          },
           { name: "Pengguna", slug: "Pengguna", href: getUrl("Pengguna"), icon: UsersIcon },
         ]
-      : []),
+      : [
+          {
+            name: "Laporan",
+            slug: "Laporan",
+            href: getUrl("Laporan"),
+            icon: ChartIcon,
+            badge:
+              bidangUnreadCount(bidangId) > 0
+                ? String(bidangUnreadCount(bidangId))
+                : myReturned(bidangId).length > 0
+                ? String(myReturned(bidangId).length)
+                : undefined,
+            badgeColor: "bg-amber-500",
+          },
+        ]),
   ];
 
   const secondaryMenu = [
@@ -80,6 +103,7 @@ export default function Navbar({ open, onClose }: NavbarProps) {
     href: string;
     icon: (p: { className?: string }) => React.ReactNode;
     badge?: string;
+    badgeColor?: string;
   }) => {
     const active = isActive(item.slug);
     const Icon = item.icon;
@@ -103,7 +127,7 @@ export default function Navbar({ open, onClose }: NavbarProps) {
           />
           <span className="flex-1 truncate">{item.name}</span>
           {item.badge && (
-            <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white">
+            <span className={`rounded-full ${item.badgeColor || "bg-red-600"} px-2 py-0.5 text-[10px] font-bold text-white`}>
               {item.badge}
             </span>
           )}

@@ -12,7 +12,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-export type NotificationType = "hibah" | "arsip" | "lembaga";
+export type NotificationType = "hibah" | "arsip" | "lembaga" | "dokumen_masuk";
 
 export type AppNotification = {
   id: string;
@@ -22,6 +22,7 @@ export type AppNotification = {
   message: string;
   createdAt: number;
   read: boolean;
+  reviewId?: string; // link ke ReviewItem jika terkait alur review
 };
 
 const STORAGE_KEY = "kesbangpol_notifications";

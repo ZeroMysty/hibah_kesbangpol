@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Navbar from "./navbar";
-import { BellIcon, MenuIcon, SearchIcon, LogoutIcon } from "./icons";
+import { BellIcon, MenuIcon, SearchIcon, LogoutIcon, AlertIcon } from "./icons";
 import { useMode } from "@/context/mode-context";
+import { useReview } from "@/context/review-context";
+import { formatRelativeTime } from "@/lib/utils";
 
 const notifications: {
   title: string;
@@ -22,9 +24,28 @@ export default function DashboardShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { currentUser, isLoggedIn, logout, getUrl, getHomeUrl, mode } = useMode();
+  const notifRef = useRef<HTMLDivElement>(null);
+  const { currentUser, isLoggedIn, logout, getUrl, getHomeUrl, mode, bidangId } = useMode();
+  const { totalPendingCount, bidangNotifications, bidangUnreadCount, markBidangNotifsRead, myReturned } = useReview();
   const pathname = usePathname();
   const router = useRouter();
+
+  const now = Date.now();
+  const myNotifs = mode === "bidang" ? bidangNotifications(bidangId) : [];
+  const myUnread = mode === "bidang" ? bidangUnreadCount(bidangId) : 0;
+  const myReturnedDocs = mode === "bidang" ? myReturned(bidangId) : [];
+
+  // Close notif dropdown when clicking outside
+  useEffect(() => {
+    if (!notifOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [notifOpen]);
 
   // Extract page slug from pathname
   const segments = pathname.split("/").filter(Boolean);
@@ -131,82 +152,147 @@ export default function DashboardShell({
             />
           </form>
 
-          {/* Notifications */}
-          {mode === "admin" && (
-            <div className="relative">
-              <button
-                onClick={() => setNotifOpen((v) => !v)}
-                className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-                aria-label="Notifikasi"
-                aria-expanded={notifOpen}
-              >
-                <BellIcon className="h-5 w-5" />
-                {notifications.some((n) => n.unread) && (
-                  <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-                  </span>
-                )}
-              </button>
+          {/* Notifications — Admin: pending review count | Bidang: perbaikan dokumen */}
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => {
+                setNotifOpen((v) => !v);
+                if (mode === "bidang" && myUnread > 0) markBidangNotifsRead(bidangId);
+              }}
+              className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+              aria-label="Notifikasi"
+              aria-expanded={notifOpen}
+            >
+              <BellIcon className="h-5 w-5" />
+              {/* Badge merah untuk admin (pending review) */}
+              {mode === "admin" && totalPendingCount > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white">
+                  {totalPendingCount > 9 ? "9+" : totalPendingCount}
+                </span>
+              )}
+              {/* Badge oranye untuk bidang (notif perbaikan belum dibaca) */}
+              {mode === "bidang" && myUnread > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">
+                  {myUnread > 9 ? "9+" : myUnread}
+                </span>
+              )}
+              {/* Ping animasi jika ada unread */}
+              {((mode === "admin" && totalPendingCount > 0) || (mode === "bidang" && myUnread > 0)) && (
+                <span className="absolute right-1 top-1 flex h-4 w-4">
+                  <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${mode === "admin" ? "bg-red-400" : "bg-amber-400"}`} />
+                </span>
+              )}
+            </button>
 
-              {notifOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setNotifOpen(false)}
-                    aria-hidden="true"
-                  />
-                  <div
-                    role="dialog"
-                    aria-label="Daftar notifikasi"
-                    className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl shadow-zinc-950/10 sm:w-96"
-                  >
-                    <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-                      <p className="text-sm font-semibold">Notifikasi</p>
-                      {notifications.filter((n) => n.unread).length > 0 ? (
-                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
-                          {notifications.filter((n) => n.unread).length} baru
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-zinc-400">0 baru</span>
-                      )}
-                    </div>
-                    {notifications.length > 0 ? (
-                      <ul className="max-h-80 overflow-y-auto">
-                        {notifications.map((n) => (
-                          <li
-                            key={n.title}
-                            className={`flex gap-3 border-b border-zinc-50 px-4 py-3 transition-colors hover:bg-zinc-50 last:border-0 ${
-                              n.unread ? "bg-red-50/50" : ""
-                            }`}
-                          >
-                            <span
-                              className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                                n.unread ? "bg-red-500" : "bg-zinc-300"
-                              }`}
-                            />
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-zinc-900">
-                                {n.title}
-                              </p>
-                              <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
-                                {n.desc}
-                              </p>
-                              <p className="mt-1 text-[11px] text-zinc-400">{n.time}</p>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="p-8 text-center text-xs text-zinc-400">
-                        Tidak ada notifikasi baru saat ini.
-                      </div>
+            {notifOpen && (
+              <div
+                role="dialog"
+                aria-label="Daftar notifikasi"
+                className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl shadow-zinc-950/10 sm:w-96"
+              >
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
+                    <p className="text-sm font-semibold">Notifikasi</p>
+                    {mode === "admin" && totalPendingCount > 0 && (
+                      <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
+                        {totalPendingCount} dokumen perlu review
+                      </span>
+                    )}
+                    {mode === "bidang" && myUnread > 0 && (
+                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                        {myUnread} belum dibaca
+                      </span>
+                    )}
+                    {((mode === "admin" && totalPendingCount === 0) || (mode === "bidang" && myUnread === 0 && myNotifs.length === 0)) && (
+                      <span className="text-[11px] text-zinc-400">Tidak ada notifikasi</span>
                     )}
                   </div>
-                </>
-              )}
-            </div>
-          )}
+
+                  {/* Konten Admin */}
+                  {mode === "admin" && (
+                    totalPendingCount > 0 ? (
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3">
+                          <AlertIcon className="h-5 w-5 text-red-600 shrink-0" />
+                          <div>
+                            <p className="text-sm font-semibold text-red-800">{totalPendingCount} dokumen menunggu review</p>
+                            <p className="text-xs text-red-600 mt-0.5">Buka halaman Laporan untuk meninjau</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => { setNotifOpen(false); router.push(getUrl("Laporan")); }}
+                          className="w-full rounded-xl bg-red-600 py-2 text-xs font-semibold text-white transition hover:bg-red-500"
+                        >
+                          Buka Antrian Review →
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center text-xs text-zinc-400">
+                        Tidak ada dokumen yang menunggu review.
+                      </div>
+                    )
+                  )}
+
+                  {/* Konten Bidang */}
+                  {mode === "bidang" && (
+                    myNotifs.length > 0 ? (
+                      <>
+                        <ul className="max-h-72 overflow-y-auto divide-y divide-zinc-100">
+                          {myNotifs.slice(0, 10).map((n) => (
+                            <li
+                              key={n.id}
+                              className={`px-4 py-3 transition-colors hover:bg-zinc-50 ${
+                                !n.read ? "bg-amber-50/60" : ""
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                <AlertIcon className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold text-zinc-900 truncate">{n.documentName}</p>
+                                  {n.catatanAdmin && (
+                                    <p className="text-[11px] text-amber-700 italic mt-0.5 line-clamp-2">"{n.catatanAdmin}"</p>
+                                  )}
+                                  <p className="text-[10px] text-zinc-400 mt-1">{formatRelativeTime(n.createdAt, now)}</p>
+                                </div>
+                                {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="border-t border-zinc-100 p-3">
+                          <button
+                            onClick={() => { setNotifOpen(false); router.push(getUrl("Laporan")); }}
+                            className="w-full rounded-xl bg-amber-500 py-2 text-xs font-semibold text-white transition hover:bg-amber-400"
+                          >
+                            Lihat & Perbaiki Dokumen →
+                          </button>
+                        </div>
+                      </>
+                    ) : myReturnedDocs.length > 0 ? (
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
+                          <AlertIcon className="h-5 w-5 text-amber-600 shrink-0" />
+                          <div>
+                            <p className="text-sm font-semibold text-amber-800">{myReturnedDocs.length} dokumen perlu perbaikan</p>
+                            <p className="text-xs text-amber-600 mt-0.5">Admin telah mengembalikan dokumen Anda</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => { setNotifOpen(false); router.push(getUrl("Laporan")); }}
+                          className="w-full rounded-xl bg-amber-500 py-2 text-xs font-semibold text-white transition hover:bg-amber-400"
+                        >
+                          Perbaiki Sekarang →
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center text-xs text-zinc-400">
+                        Tidak ada notifikasi saat ini.
+                      </div>
+                    )
+                  )}
+              </div>
+            )}
+          </div>
 
           {/* User Profile — click avatar/name to go to /pengaturan */}
           <div className="flex items-center gap-2 border-l border-zinc-200 pl-3">

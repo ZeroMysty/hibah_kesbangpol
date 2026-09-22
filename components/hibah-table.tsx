@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
 import { useNotifications } from "@/context/notification-context";
+import { useReview } from "@/context/review-context";
 import {
   useHibah,
   ProposalItem,
@@ -41,6 +42,7 @@ const lemariFilterList = [
 export default function HibahTable() {
   const { mode, bidangId } = useMode();
   const { addNotification } = useNotifications();
+  const { submitForReview } = useReview();
   const {
     proposals,
     isLoading,
@@ -143,7 +145,62 @@ export default function HibahTable() {
 
     setIsSubmitting(true);
     const numericNominal = Number(newNominal.replace(/\D/g, "")) || 50000000;
+    const currentYear = new Date().getFullYear().toString();
 
+    // ── Mode BIDANG: kirim ke antrian review admin ──────────────────────
+    if (mode === "bidang") {
+      let fileDataUrl: string | undefined;
+      let fileName: string | undefined;
+      let fileSize: string | undefined;
+      let fileType: string | undefined;
+      if (newFile) {
+        fileName = newFile.name;
+        fileSize = `${(newFile.size / (1024 * 1024)).toFixed(2)} MB`;
+        fileType = newFile.type;
+        try {
+          fileDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(newFile);
+          });
+        } catch {}
+      }
+
+      submitForReview({
+        bidangId: newBidangId,
+        bidangNama: bidangInfo[newBidangId].shortName,
+        name: newName,
+        instansi: newInstansi,
+        kategori: newKategori,
+        nominal: numericNominal,
+        tahun: currentYear,
+        lemariArsip: newLemari,
+        rakArsip: newRak,
+        nomorArsip: newNomor,
+        pic: newPic || undefined,
+        noTelp: newNoTelp || undefined,
+        fileName,
+        fileDataUrl,
+        fileType,
+        fileSize,
+      });
+
+      // Notifikasi ke admin (feed Laporan)
+      addNotification({
+        type: "dokumen_masuk",
+        bidangId: newBidangId,
+        bidangNama: bidangInfo[newBidangId].shortName,
+        message: `Dokumen baru masuk untuk review: "${newName}" dari ${newInstansi}`,
+      });
+
+      setIsSubmitting(false);
+      setShowAddModal(false);
+      setNewName(""); setNewInstansi(""); setNewNominal(""); setNewPic(""); setNewNoTelp(""); setNewFile(null);
+      showToast(`Dokumen "${newName}" berhasil dikirim ke admin untuk direview.`);
+      return;
+    }
+
+    // ── Mode ADMIN: langsung simpan ke storage ──────────────────────────
     await addProposal({
       name: newName,
       instansi: newInstansi,
@@ -158,7 +215,6 @@ export default function HibahTable() {
       file: newFile,
     });
 
-    // Catat ke Laporan (khusus admin) bahwa ada usulan hibah baru dari bidang ini.
     addNotification({
       type: "hibah",
       bidangId: newBidangId,
@@ -168,15 +224,7 @@ export default function HibahTable() {
 
     setIsSubmitting(false);
     setShowAddModal(false);
-
-    // Reset
-    setNewName("");
-    setNewInstansi("");
-    setNewNominal("");
-    setNewPic("");
-    setNewNoTelp("");
-    setNewFile(null);
-
+    setNewName(""); setNewInstansi(""); setNewNominal(""); setNewPic(""); setNewNoTelp(""); setNewFile(null);
     showToast(`Dokumen usulan hibah berhasil diarsipkan ke ${newLemari}, ${newRak}, ${newNomor}!`);
   };
 
@@ -431,10 +479,12 @@ export default function HibahTable() {
             <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-zinc-900">
-                  Formulir Pengarsipan Hibah Baru
+                  {mode === "bidang" ? "Ajukan Dokumen Hibah" : "Formulir Pengarsipan Hibah Baru"}
                 </h3>
                 <p className="text-xs text-zinc-500">
-                  Input data usulan hibah dan tentukan Lemari, Rak, serta Nomor penyimpanan berkas fisik & digital.
+                  {mode === "bidang"
+                    ? "Dokumen akan dikirim ke admin untuk direview sebelum disimpan ke storage."
+                    : "Input data usulan hibah dan tentukan Lemari, Rak, serta Nomor penyimpanan berkas fisik & digital."}
                 </p>
               </div>
               <button
@@ -641,9 +691,17 @@ export default function HibahTable() {
               </div>
 
               {/* Status & Storage Notice */}
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3 text-xs text-zinc-700 flex items-center gap-2">
-                <ArchiveIcon className="h-4 w-4 shrink-0 text-red-600" />
-                <span>Dokumen akan tersimpan di <strong>{newLemari} &bull; {newRak} &bull; {newNomor}</strong> dan terintegrasi otomatis ke sistem arsip digital.</span>
+              <div className={`rounded-xl border p-3 text-xs flex items-center gap-2 ${
+                mode === "bidang"
+                  ? "border-amber-200 bg-amber-50 text-amber-800"
+                  : "border-zinc-200 bg-zinc-50/80 text-zinc-700"
+              }`}>
+                <ArchiveIcon className={`h-4 w-4 shrink-0 ${mode === "bidang" ? "text-amber-600" : "text-red-600"}`} />
+                {mode === "bidang" ? (
+                  <span>Dokumen akan <strong>dikirim ke admin</strong> untuk direview. Jika disetujui, otomatis tersimpan ke <strong>{newLemari} &bull; {newRak} &bull; {newNomor}</strong>.</span>
+                ) : (
+                  <span>Dokumen akan tersimpan di <strong>{newLemari} &bull; {newRak} &bull; {newNomor}</strong> dan terintegrasi otomatis ke sistem arsip digital.</span>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
@@ -659,7 +717,9 @@ export default function HibahTable() {
                   disabled={isSubmitting}
                   className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98] disabled:opacity-50"
                 >
-                  {isSubmitting ? "Menyimpan & Mengarsipkan..." : "Simpan & Arsipkan Berkas"}
+                  {isSubmitting
+                    ? (mode === "bidang" ? "Mengirim ke Admin..." : "Menyimpan & Mengarsipkan...")
+                    : (mode === "bidang" ? "Kirim ke Admin untuk Review" : "Simpan & Arsipkan Berkas")}
                 </button>
               </div>
             </form>
