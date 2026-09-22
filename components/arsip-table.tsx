@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
@@ -158,6 +158,16 @@ export default function ArsipTable() {
       matchesQuery
     );
   });
+
+  const ITEMS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredArsip.length / ITEMS_PER_PAGE));
+  const pagedArsip = filteredArsip.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, selectedJenis, selectedLemari, selectedTahun, activeBidangFilter, showOlderDocs]);
 
   const handleAddArchive = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -458,7 +468,7 @@ export default function ArsipTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {filteredArsip.map((item) => {
+              {pagedArsip.map((item) => {
                 const isOld = isOlderThan8Years(item.tahun || item.tanggal);
                 return (
                   <tr
@@ -563,24 +573,60 @@ export default function ArsipTable() {
           </table>
         </div>
 
-        {/* Footer info */}
-        <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-5 py-3.5 text-xs text-zinc-500">
-          <p>
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-5 py-3 text-xs text-zinc-500 gap-3 flex-wrap">
+          <span>
             Menampilkan{" "}
-            <strong className="font-semibold text-zinc-900">
-              {filteredArsip.length}
-            </strong>{" "}
-            berkas arsip digital
+            <strong className="text-zinc-800">{filteredArsip.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}</strong>
+            {" "}&ndash;{" "}
+            <strong className="text-zinc-800">{Math.min(currentPage * ITEMS_PER_PAGE, filteredArsip.length)}</strong>
+            {" "}dari{" "}
+            <strong className="text-zinc-800">{filteredArsip.length}</strong> berkas arsip
             {!showOlderDocs && totalOlderDocs > 0 && (
               <span className="text-amber-700 font-medium ml-1">
-                ({totalOlderDocs} dokumen &gt; 8 tahun disembunyikan otomatis)
+                ({totalOlderDocs} dokumen &gt; 8 tahun disembunyikan)
               </span>
             )}
-          </p>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-400">
-              Database Pengarsipan Hibah Bakesbangpol
-            </span>
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              &lsaquo;
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+              .reduce<(number | string)[]>((acc, p, idx, arr) => {
+                if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, idx) =>
+                p === "..." ? (
+                  <span key={`el-${idx}`} className="px-1 text-zinc-400">&hellip;</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p as number)}
+                    className={`inline-flex h-7 min-w-[28px] items-center justify-center rounded-lg border px-2 text-xs font-semibold transition ${
+                      currentPage === p
+                        ? "border-red-500 bg-red-600 text-white shadow-sm"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-100"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              &rsaquo;
+            </button>
           </div>
         </div>
       </div>
