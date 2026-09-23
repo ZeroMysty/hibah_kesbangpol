@@ -38,6 +38,11 @@ const lemariFilterList = [
   "Lemari Arsip Khusus",
 ];
 
+interface PenerimaHibah {
+  nama: string;
+  bidangId: BidangId;
+}
+
 
 export default function HibahTable() {
   const { mode, bidangId } = useMode();
@@ -53,12 +58,14 @@ export default function HibahTable() {
     isOlderThan8Years,
     isOlderThan5Years,
   } = useHibah();
+  const [penerimaHibah, setPenerimaHibah] = useState<PenerimaHibah[]>([]);
 
   const [query, setQuery] = useState("");
   const [filterLemari, setFilterLemari] = useState("Semua");
   const [filterBidang, setFilterBidang] = useState<number | "Semua">(
     mode === "bidang" ? bidangId : "Semua"
   );
+  const [filterInstansi, setFilterInstansi] = useState("Semua");
   // Auto-hide documents older than 5 years (permanent â€” only Arsip Hibah can show these)
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
@@ -122,6 +129,46 @@ export default function HibahTable() {
     }
   }, []);
 
+  useEffect(() => {
+    const fetchPenerimaHibah = async () => {
+      try {
+        const res = await fetch("/api/lembaga");
+        if (!res.ok) return;
+        const json = await res.json();
+        setPenerimaHibah(
+          (json.data || [])
+            .map((row: { Nama_lembaga_ormas?: string; bidang_yang_terkait?: string | number }) => ({
+              nama: row.Nama_lembaga_ormas || "",
+              bidangId: Number(row.bidang_yang_terkait) as BidangId,
+            }))
+            .filter(
+              (item: PenerimaHibah) =>
+                item.nama && [1, 2, 3, 4].includes(item.bidangId)
+            )
+        );
+      } catch (error) {
+        console.error("Gagal mengambil daftar penerima hibah:", error);
+      }
+    };
+
+    fetchPenerimaHibah();
+  }, []);
+
+  const bidangUntukFilter = mode === "bidang" ? bidangId : filterBidang;
+  const penerimaBidangAktif = Array.from(
+    new Set(
+      penerimaHibah
+        .filter(
+          (item) =>
+            bidangUntukFilter === "Semua" || item.bidangId === bidangUntukFilter
+        )
+        .map((item) => item.nama)
+    )
+  ).sort();
+  const filterInstansiAktif = penerimaBidangAktif.includes(filterInstansi)
+    ? filterInstansi
+    : "Semua";
+
   const filtered = proposals.filter((p) => {
     // Hard filter: documents older than 5 years are not shown here
     // They are accessible exclusively via the Arsip Hibah page
@@ -137,7 +184,11 @@ export default function HibahTable() {
         ? p.bidangId === bidangId
         : filterBidang === "Semua" || p.bidangId === filterBidang;
 
-    return matchesQuery && matchesLemari && matchesBidang;
+    const matchesInstansi =
+      mode === "bidang"
+        ? filterInstansiAktif === "Semua" || p.instansi === filterInstansiAktif
+        : true;
+    return matchesQuery && matchesLemari && matchesBidang && matchesInstansi;
   });
 
   const ITEMS_PER_PAGE = 10;
@@ -148,7 +199,7 @@ export default function HibahTable() {
   // Reset to page 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, filterLemari, filterBidang]);
+  }, [query, filterLemari, filterBidang, filterInstansi]);
 
   const handleAddProposal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -316,7 +367,7 @@ export default function HibahTable() {
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
         <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Filter:</span>
 
-        {/* Bidang Dropdown */}
+        {/* Bidang Dropdown (admin) / Penerima Hibah Dropdown (bidang mode) */}
         {mode === "admin" ? (
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-zinc-500">Bidang:</span>
@@ -339,12 +390,19 @@ export default function HibahTable() {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-500">Bidang:</span>
-            <span
-              className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-bold text-white shadow-sm ${bidangInfo[bidangId].color}`}
+            <span className="text-xs font-semibold text-zinc-500">Penerima Hibah:</span>
+            <select
+              value={filterInstansiAktif}
+              onChange={(e) => setFilterInstansi(e.target.value)}
+              className="h-9 max-w-[180px] rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
             >
-              Bidang {bidangId}
-            </span>
+              <option value="Semua">Semua Penerima</option>
+              {penerimaBidangAktif.map((inst) => (
+                <option key={inst} value={inst}>
+                  {inst}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
