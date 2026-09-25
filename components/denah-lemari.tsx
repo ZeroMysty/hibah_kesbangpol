@@ -25,6 +25,8 @@ import {
 
 const formatRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 
+type DisplayDocument = ProposalItem & { displayKey: string };
+
 const LEMARI_DETAILS: Record<
   LemariArsip,
   {
@@ -92,13 +94,15 @@ const LEMARI_DETAILS: Record<
 export default function DenahLemari() {
   const { mode, bidangId } = useMode();
   const { proposals, arsipList } = useHibah();
+  const visibleProposals = mode === "bidang" ? proposals.filter((p) => p.bidangId === bidangId) : proposals;
+  const visibleArsipList = mode === "bidang" ? arsipList.filter((a) => a.bidangId === bidangId) : arsipList;
 
   // Combine unique documents for display (proposals + standalone arsip documents)
   const allDocs = useMemo(() => {
-    const standaloneArsip: ProposalItem[] = arsipList
+    const standaloneArsip: DisplayDocument[] = visibleArsipList
       .filter((a) => {
         // Skip duplicate proposal entries created automatically by addProposal
-        return !proposals.some(
+        return !visibleProposals.some(
           (p) =>
             a.judul === `Proposal & Berkas Hibah: ${p.name}` ||
             (a.nominal && a.nominal === p.nominal && a.instansi === p.instansi)
@@ -106,6 +110,7 @@ export default function DenahLemari() {
       })
       .map((a, idx) => ({
         id: a.dbId || 100000 + idx,
+        displayKey: `arsip-${a.dbId || idx}`,
         dbId: a.dbId,
         name: a.judul,
         instansi: a.instansi,
@@ -126,8 +131,17 @@ export default function DenahLemari() {
         fileType: a.fileType,
       }));
 
-    return [...proposals, ...standaloneArsip];
-  }, [proposals, arsipList]);
+    const proposalDocs: DisplayDocument[] = visibleProposals.map((proposal) => ({
+      ...proposal,
+      displayKey: `proposal-${proposal.id}`,
+    }));
+
+    return [...proposalDocs, ...standaloneArsip];
+  }, [visibleArsipList, visibleProposals]);
+
+  const visibleLemariOptions = mode === "bidang"
+    ? LEMARI_OPTIONS.filter((lem) => lem.bidangId === bidangId)
+    : LEMARI_OPTIONS;
 
   const defaultLemari: LemariArsip =
     mode === "bidang"
@@ -224,7 +238,7 @@ export default function DenahLemari() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {LEMARI_OPTIONS.map((lem) => {
+          {visibleLemariOptions.map((lem) => {
             const isSelected = selectedLemari === lem.id;
             const details = LEMARI_DETAILS[lem.id];
             const stats = lemariStats[lem.id] || { count: 0, nominal: 0 };
@@ -367,7 +381,7 @@ export default function DenahLemari() {
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {docsInThisRak.map((doc) => (
                       <div
-                        key={doc.id}
+                        key={doc.displayKey}
                         className="group relative flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-xs transition hover:border-red-300 hover:shadow-md hover:-translate-y-0.5"
                       >
                         <div>

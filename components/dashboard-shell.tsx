@@ -34,6 +34,7 @@ export default function DashboardShell({
   const myNotifs = mode === "bidang" ? bidangNotifications(bidangId) : [];
   const myUnread = mode === "bidang" ? bidangUnreadCount(bidangId) : 0;
   const myReturnedDocs = mode === "bidang" ? myReturned(bidangId) : [];
+  // Mode Kaban adalah view-only: tidak ada notifikasi review maupun perbaikan
 
   // Close notif dropdown when clicking outside
   useEffect(() => {
@@ -58,6 +59,7 @@ export default function DashboardShell({
     bidang2: "Beranda",
     bidang3: "Beranda",
     bidang4: "Beranda",
+    kaban: "Beranda",
     dokumen: "Daftar Dokumen",
     lemari: "Denah Lemari",
     hibah: "Data Hibah",
@@ -76,6 +78,7 @@ export default function DashboardShell({
     "bidang2",
     "bidang3",
     "bidang4",
+    "kaban",
   ].includes(currentSlug.toLowerCase());
 
   const pageTitle = pageTitleMap[currentSlug.toLowerCase()] ?? "Dashboard";

@@ -22,6 +22,7 @@ export default function ModeSwitcher() {
         <span className="font-bold text-zinc-900">
           {mode === "admin" && "Admin Kesbangpol"}
           {mode === "bidang" && `Staff ${bidangInfo[bidangId].shortName}`}
+          {mode === "kaban" && "Kepala Badan (Kaban)"}
         </span>
         <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600 font-mono">
           {currentUser.initials}

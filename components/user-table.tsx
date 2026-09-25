@@ -20,17 +20,18 @@ type User = {
   id: number;
   name: string;
   email: string;
-  roleGroup: "Admin" | "Bidang 1" | "Bidang 2" | "Bidang 3" | "Bidang 4";
+  roleGroup: "Admin" | "Kaban" | "Bidang 1" | "Bidang 2" | "Bidang 3" | "Bidang 4";
   roleTitle: string;
   status: string;
   initials: string;
   gradient: string;
 };
 
-const roles = ["Semua", "Admin", "Bidang 1", "Bidang 2", "Bidang 3", "Bidang 4"];
+const roles = ["Semua", "Admin", "Kaban", "Bidang 1", "Bidang 2", "Bidang 3", "Bidang 4"];
 
 const gradientMap: Record<string, string> = {
   Admin: "from-emerald-500 to-teal-600",
+  Kaban: "from-slate-700 to-zinc-900",
   "Bidang 1": "from-blue-600 to-indigo-700",
   "Bidang 2": "from-red-600 to-rose-700",
   "Bidang 3": "from-amber-500 to-orange-600",
@@ -43,6 +44,7 @@ function normalizeRoleGroup(row: any): User["roleGroup"] {
   const email = (row.email || "").toString().toLowerCase();
   const combined = `${peran} ${jabatan} ${email}`;
 
+  if (combined.includes("kaban")) return "Kaban";
   if (combined.includes("bidang 1") || combined.includes("bidang1")) return "Bidang 1";
   if (combined.includes("bidang 2") || combined.includes("bidang2")) return "Bidang 2";
   if (combined.includes("bidang 3") || combined.includes("bidang3")) return "Bidang 3";
@@ -465,6 +467,7 @@ export default function UserTable() {
                     className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
                   >
                     <option value="Admin">Admin Utama</option>
+                    <option value="Kaban">Kaban (Kepala Badan — View Only)</option>
                     <option value="Bidang 1">Bidang 1 (Wasbang)</option>
                     <option value="Bidang 2">Bidang 2 (Poldagri & Ormas)</option>
                     <option value="Bidang 3">Bidang 3 (Ekosodbud & Agama)</option>

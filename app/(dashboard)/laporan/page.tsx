@@ -178,6 +178,7 @@ function ReturnModal({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LaporanPage() {
   const { mode, bidangId, currentUser } = useMode();
+  // Mode Kaban view-only: hanya statistik, tanpa aksi review dokumen
   const { proposals, arsipList, addProposal } = useHibah();
   const { notifications, unreadCount, markAllRead, addNotification } = useNotifications();
   const {
@@ -213,14 +214,16 @@ export default function LaporanPage() {
   const now = Date.now();
 
   // ── DATA STATISTIK ──────────────────────────────────────────────────────────
+  const visibleProposals = mode === "bidang" ? proposals.filter((p) => p.bidangId === bidangId) : proposals;
+  const visibleArsip = mode === "bidang" ? arsipList.filter((a) => a.bidangId === bidangId) : arsipList;
   const allItems = [
-    ...proposals.map((p) => ({ tahun: p.tahun || p.tanggal?.slice(0, 4) || "—", bidangId: p.bidangId, nominal: p.nominal || 0 })),
-    ...arsipList.map((a) => ({ tahun: a.tahun || a.tanggal?.slice(0, 4) || "—", bidangId: a.bidangId, nominal: a.nominal || 0 })),
+    ...visibleProposals.map((p) => ({ tahun: p.tahun || p.tanggal?.slice(0, 4) || "—", bidangId: p.bidangId, nominal: p.nominal || 0 })),
+    ...visibleArsip.map((a) => ({ tahun: a.tahun || a.tanggal?.slice(0, 4) || "—", bidangId: a.bidangId, nominal: a.nominal || 0 })),
   ];
   const filtered = useMemo(
     () => filterBidang === "Semua" ? allItems : allItems.filter((d) => d.bidangId === filterBidang),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filterBidang, proposals.length, arsipList.length]
+    [filterBidang, proposals, arsipList, mode, bidangId]
   );
   const currentYear = new Date().getFullYear();
   const defaultYears = Array.from({ length: 8 }, (_, i) => String(currentYear - 7 + i));
@@ -288,6 +291,127 @@ export default function LaporanPage() {
     setResubmitTarget(null);
     showToast("Dokumen berhasil disubmit ulang untuk direview admin.");
   };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Tampilan KABAN (view-only): statistik saja, tanpa antrian review
+  // ─────────────────────────────────────────────────────────────────────────
+  if (mode === "kaban") {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Laporan & Statistik</h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Rekapitulasi hibah seluruh bidang — mode pemantauan (hanya lihat &amp; unduh).
+          </p>
+        </div>
+
+        {/* Statistik & Aktivitas Terbaru — tampil langsung tanpa perlu klik tab */}
+          <>
+            {/* Grafik */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm w-full">
+              <div className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-zinc-100 pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                    <ChartIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-zinc-900">Total Berkas Per Tahun</h2>
+                    <p className="text-xs text-zinc-400">
+                      {filterBidang === "Semua" ? "Semua bidang — 1 batang per tahun" : `Bidang ${filterBidang} — ${bidangInfo[filterBidang].shortName}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {(["Semua", 1, 2, 3, 4] as (BidangId | "Semua")[]).map((b) => (
+                    <FilterPill
+                      key={String(b)}
+                      label={b === "Semua" ? "Semua Bidang" : `Bidang ${b}`}
+                      active={filterBidang === b}
+                      onClick={() => setFilterBidang(b)}
+                      color={b !== "Semua" ? BIDANG_HEX[b as BidangId] : undefined}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="mb-6 grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-zinc-50 p-3.5 border border-zinc-100">
+                  <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">Total Berkas</p>
+                  <p className="mt-1 text-2xl font-black text-zinc-900">{totalBerkas}</p>
+                </div>
+                <div className="rounded-xl bg-zinc-50 p-3.5 border border-zinc-100">
+                  <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">Total Nominal</p>
+                  <p className="mt-1 text-lg font-black text-zinc-900 truncate">{formatRupiah(totalNominal)}</p>
+                </div>
+                <div className="rounded-xl bg-zinc-50 p-3.5 border border-zinc-100">
+                  <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">Tahun Terbanyak</p>
+                  <p className="mt-1 text-xl font-black text-zinc-900 leading-tight">
+                    {tahunTerbanyak?.jumlah > 0 ? tahunTerbanyak.tahun : "—"}
+                  </p>
+                </div>
+              </div>
+              {chartData.every((d) => d.jumlah === 0) ? (
+                <div className="flex h-48 items-center justify-center text-sm text-zinc-400">Belum ada data berkas untuk ditampilkan.</div>
+              ) : (
+                <BarChart data={chartData} filterBidang={filterBidang} />
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4">
+                <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">Bidang:</span>
+                {([1, 2, 3, 4] as BidangId[]).map((b) => {
+                  const count = filtered.filter((d) => d.bidangId === b).length;
+                  return (
+                    <div key={b} className="flex items-center gap-1.5 text-xs text-zinc-600">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: BIDANG_HEX[b] }} />
+                      <span className="font-medium">Bidang {b}</span>
+                      <span className="text-zinc-400">({count})</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Feed Notifikasi (read-only) */}
+            <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
+                <div>
+                  <h2 className="text-base font-semibold">Aktivitas Terbaru</h2>
+                  <p className="text-xs text-zinc-400 mt-0.5">Notifikasi dari seluruh bidang</p>
+                </div>
+              </div>
+              {notifications.length === 0 ? (
+                <div className="px-6 py-12 text-center text-sm text-zinc-400">
+                  Belum ada aktivitas. Notifikasi muncul ketika ada bidang yang menambah data baru.
+                </div>
+              ) : (
+                <ul className="divide-y divide-zinc-100">
+                  {notifications.map((n) => {
+                    const Icon = typeIcon[n.type];
+                    return (
+                      <li key={n.id} className={`flex items-start gap-3.5 px-5 py-4 transition-colors ${n.read ? "" : "bg-red-50/30"}`}>
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${typeColor[n.type]}`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-bold uppercase tracking-wide text-zinc-400">{typeLabel[n.type]}</span>
+                            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-600">
+                              Bidang {n.bidangId} · {n.bidangNama}
+                            </span>
+                            {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-red-600" />}
+                          </div>
+                          <p className="mt-1 text-sm text-zinc-800">{n.message}</p>
+                          <p className="mt-1 text-xs text-zinc-400">{formatRelativeTime(n.createdAt, now)}</p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </>
+      </div>
+    );
+  }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Tampilan BIDANG

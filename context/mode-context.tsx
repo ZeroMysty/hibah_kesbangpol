@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export type Mode = "admin" | "bidang";
+export type Mode = "admin" | "bidang" | "kaban";
 export type BidangId = 1 | 2 | 3 | 4;
 
 export interface UserAccount {
@@ -17,7 +17,7 @@ export interface UserAccount {
   initials: string;
   gradient: string;
   sessionToken: string; // Token proteksi URL anti-tamper acak
-  rolePath: string;     // Folder role path (Admin, Bidang1, Bidang2, Bidang3, Bidang4)
+  rolePath: string;     // Folder role path (Admin, Bidang1, Bidang2, Bidang3, Bidang4, Kaban)
   userIndex: string;    // Multi-tenant user index (0, 1, dll)
 }
 
@@ -42,6 +42,18 @@ export const accounts: UserAccount[] = [
     gradient: "from-emerald-500 to-teal-600",
     sessionToken: "s_W8E9iFrFqoIw3NE7pL2xZbY0kM5v",
     rolePath: "Admin",
+    userIndex: "0",
+  },
+  {
+    id: "kaban",
+    name: "Kepala Badan (Kaban)",
+    email: "kaban@kesbangpol.go.id",
+    mode: "kaban",
+    roleLabel: "Kepala Badan — Akses Lihat & Unduh",
+    initials: "KB",
+    gradient: "from-slate-700 to-zinc-900",
+    sessionToken: "s_Kb7Xw2VpQmR5TzN9Yc4LhJ3Ds8Ae",
+    rolePath: "Kaban",
     userIndex: "0",
   },
   {

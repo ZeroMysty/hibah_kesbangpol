@@ -22,16 +22,23 @@ import { formatRupiah, formatShortRupiah, BIDANG_HEX } from "@/lib/utils";
 export default function DashboardPage() {
   const { mode, bidangId, getUrl } = useMode();
   const { proposals, arsipList } = useHibah();
-  const [filterBidangChart, setFilterBidangChart] = useState<BidangId | "Semua">("Semua");
+  const [filterBidangChartState, setFilterBidangChart] = useState<BidangId | "Semua">("Semua");
+  // Mode Kaban view-only: grafik selalu menampilkan semua bidang (filter tidak dapat diubah)
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
 
   // Mode Bidang Filter
   const bidangProposals = proposals.filter((p) => p.bidangId === bidangId);
+  const bidangArsip = arsipList.filter((a) => a.bidangId === bidangId);
   const displayedProposals = mode === "bidang" ? bidangProposals : proposals;
+  const displayedArsip = mode === "bidang" ? bidangArsip : arsipList;
+  const displayedYearProposals = selectedYear
+    ? displayedProposals.filter((p) => (p.tahun || p.tanggal?.slice(0, 4)) === selectedYear)
+    : displayedProposals;
 
-  const totalNominal = proposals.reduce((acc, p) => acc + (p.nominal || 0), 0);
-  const totalDokumen = proposals.length + arsipList.length;
-  const uniqueInstansi = new Set([...proposals.map((p) => p.instansi), ...arsipList.map((a) => a.instansi)]).size;
-  const activeLemariCount = new Set([...proposals.map((p) => p.lemariArsip), ...arsipList.map((a) => a.lemariArsip)]).size;
+  const totalNominal = displayedProposals.reduce((acc, p) => acc + (p.nominal || 0), 0);
+  const totalDokumen = displayedProposals.length;
+  const uniqueInstansi = new Set([...displayedProposals.map((p) => p.instansi), ...displayedArsip.map((a) => a.instansi)]).size;
+  const activeLemariCount = new Set([...displayedProposals.map((p) => p.lemariArsip), ...displayedArsip.map((a) => a.lemariArsip)]).size;
 
   const adminStats = [
     {
@@ -81,11 +88,15 @@ export default function DashboardPage() {
           <h1 className="text-xl sm:text-2xl font-black tracking-tight">
             {mode === "admin"
               ? "Sistem Pengarsipan Hibah Daerah"
+              : mode === "kaban"
+              ? "Monitoring Arsip Hibah Daerah — Kepala Badan"
               : `Pengarsipan Hibah Bidang ${bidangId}`}
           </h1>
           <p className="text-xs sm:text-sm text-red-100 max-w-2xl leading-relaxed">
             {mode === "admin"
               ? "Kelola dokumen dan arsip hibah daerah secara terstruktur dan terintegrasi."
+              : mode === "kaban"
+              ? "Mode pemantauan: seluruh data hibah dan arsip dapat dilihat dan diunduh, tanpa hak ubah."
               : `${bidangInfo[bidangId].fullName}. Kelola dan arsipkan berkas hibah.`}
           </p>
         </div>
@@ -108,9 +119,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Mode Admin Overview */}
-      {mode === "admin" && (
-        <>
+      {/* Overview */}
+      <>
           {/* Stats Grid */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {adminStats.map((stat) => {
@@ -148,23 +158,20 @@ export default function DashboardPage() {
 
           {/* â”€â”€ Grafik Batang Per Tahun (Full Width, Mulai dari Kiri) â”€â”€â”€ */}
           {(() => {
+            const filterBidangChart = mode === "kaban" ? ("Semua" as BidangId | "Semua") : filterBidangChartState;
             const allItems = [
-              ...proposals.map((p) => ({
+              ...displayedProposals.map((p) => ({
                 tahun: p.tahun || p.tanggal?.slice(0, 4) || "",
                 bidangId: p.bidangId,
                 nominal: p.nominal || 0,
               })),
-              ...arsipList.map((a) => ({
-                tahun: a.tahun || a.tanggal?.slice(0, 4) || "",
-                bidangId: a.bidangId,
-                nominal: (a as any).nominal || 0,
-              })),
             ].filter((d) => d.tahun);
 
+            const bidangChart = mode === "bidang" ? bidangId : filterBidangChart;
             const filtered =
-              filterBidangChart === "Semua"
+              bidangChart === "Semua"
                 ? allItems
-                : allItems.filter((d) => d.bidangId === filterBidangChart);
+                : allItems.filter((d) => d.bidangId === bidangChart);
 
             // Tampilkan 8 tahun terakhir (misal: 2019 s/d 2026), plus tahun lain jika ada di data
             const currentYear = new Date().getFullYear();
@@ -183,7 +190,7 @@ export default function DashboardPage() {
 
             const maxJ = Math.max(...bars.map((b) => b.jumlah), 1);
             const barColor =
-              filterBidangChart === "Semua" ? "#e11d48" : BIDANG_HEX[filterBidangChart];
+              bidangChart === "Semua" ? "#e11d48" : BIDANG_HEX[bidangChart];
 
             return (
               <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm w-full">
@@ -196,16 +203,16 @@ export default function DashboardPage() {
                     <div>
                       <h2 className="text-base font-bold text-zinc-900">Rekapitulasi Dokumen Per Tahun</h2>
                       <p className="text-xs text-zinc-500">
-                        {filterBidangChart === "Semua"
+                        {bidangChart === "Semua"
                           ? "Semua bidang â€” 1 batang per tahun"
-                          : `Bidang ${filterBidangChart} (${bidangInfo[filterBidangChart].shortName})`}
+                          : `Bidang ${bidangChart} (${bidangInfo[bidangChart].shortName})`}
                       </p>
                     </div>
                   </div>
 
-                  {/* Filter Buttons */}
+                  {/* Filter Buttons — disembunyikan untuk mode kaban (view-only) */}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    {(["Semua", 1, 2, 3, 4] as (BidangId | "Semua")[]).map((b) => (
+                    {mode === "admin" && (["Semua", 1, 2, 3, 4] as (BidangId | "Semua")[]).map((b) => (
                       <button
                         key={String(b)}
                         type="button"
@@ -250,8 +257,10 @@ export default function DashboardPage() {
                       {bars.map((d) => {
                         const heightPercent = maxJ > 0 ? (d.jumlah / maxJ) * 100 : 0;
                         return (
-                          <div
+                          <button
                             key={d.tahun}
+                            type="button"
+                            onClick={() => setSelectedYear(d.tahun)}
                             className="group relative flex-1 flex flex-col items-center justify-end h-full cursor-pointer min-w-0"
                           >
                             {/* Hover tooltip */}
@@ -280,7 +289,7 @@ export default function DashboardPage() {
                                 backgroundColor: d.jumlah > 0 ? barColor : "#e4e4e7",
                               }}
                             />
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
@@ -302,7 +311,6 @@ export default function DashboardPage() {
             );
           })()}
         </>
-      )}
 
       {/* Table Section */}
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
@@ -310,16 +318,27 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <FolderIcon className="h-5 w-5 text-red-500" />
             <h2 className="text-base font-semibold">
-              Dokumen Terarsip Terbaru
+              {selectedYear ? `Dokumen Tahun ${selectedYear}` : "Dokumen Terarsip Terbaru"}
             </h2>
           </div>
-          <Link
-            href={getUrl("Dokumen")}
-            className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-500"
-          >
-            Lihat semua dokumen
-            <ChevronRightIcon className="h-4 w-4" />
-          </Link>
+          <div className="flex items-center gap-3">
+            {selectedYear && (
+              <button
+                type="button"
+                onClick={() => setSelectedYear(null)}
+                className="text-xs font-semibold text-zinc-500 hover:text-red-600"
+              >
+                Tampilkan semua
+              </button>
+            )}
+            <Link
+              href={getUrl("Dokumen")}
+              className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-500"
+            >
+              Lihat semua dokumen
+              <ChevronRightIcon className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
 
         <div className="overflow-x-auto no-scrollbar">
@@ -335,7 +354,7 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {displayedProposals.slice(0, 8).map((p) => (
+              {displayedYearProposals.slice(0, 8).map((p) => (
                 <tr
                   key={p.id}
                   className="transition-colors hover:bg-zinc-50/70"
@@ -383,7 +402,7 @@ export default function DashboardPage() {
                   </td>
                 </tr>
               ))}
-              {displayedProposals.length === 0 && (
+              {displayedYearProposals.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-12 text-center text-xs text-zinc-400">
                     Belum ada data usulan hibah terdaftar. Silakan tambahkan usulan baru melalui halaman Kelola Lemari Arsip.

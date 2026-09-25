@@ -316,6 +316,8 @@ interface LembagaItem {
 
 export default function LembagaPage() {
   const { mode, bidangId } = useMode();
+  // Mode Kaban view-only: hanya lihat & unduh, semua aksi ubah data disembunyikan
+  const readOnly = mode === "kaban";
   const [lembagaList, setLembagaList] = useState<LembagaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -644,8 +646,13 @@ export default function LembagaPage() {
 
       {/* Stats Cards: Total Penerima Hibah per Bidang */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {([1, 2, 3, 4] as BidangId[]).map((id) => {
-          const count = lembagaList.filter((l) => l.bidangId === id).length;
+        {(mode === "bidang" ? [bidangId] : [1, 2, 3, 4] as BidangId[]).map((id) => {
+          const count = lembagaList.filter(
+            (l) => l.bidangId === id && (mode === "admin" || l.bidangId === bidangId)
+          ).length;
+          const totalVisibleLembaga = mode === "bidang"
+            ? lembagaList.filter((l) => l.bidangId === bidangId).length
+            : lembagaList.length;
           const info = bidangInfo[id];
           const isSelected = filterBidang === id;
 
@@ -712,8 +719,8 @@ export default function LembagaPage() {
                   Bidang {id}
                 </span>
                 <span className="text-[11px] font-bold text-zinc-400">
-                  {lembagaList.length > 0
-                    ? `${Math.round((count / lembagaList.length) * 100)}%`
+                  {totalVisibleLembaga > 0
+                    ? `${Math.round((count / totalVisibleLembaga) * 100)}%`
                     : "0%"}
                 </span>
               </div>
@@ -761,13 +768,15 @@ export default function LembagaPage() {
             <span>Export</span>
           </button>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            <span>Daftarkan Penerima Hibah</span>
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              <span>Daftarkan Penerima Hibah</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -861,13 +870,15 @@ export default function LembagaPage() {
                           <EyeIcon className="h-3.5 w-3.5" />
                           <span>Detail</span>
                         </button>
-                        <button
-                          onClick={() => handleDeletePrompt(item.id)}
-                          className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"
-                          title="Hapus Penerima Hibah dari Database"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
+                        {!readOnly && (
+                          <button
+                            onClick={() => handleDeletePrompt(item.id)}
+                            className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"
+                            title="Hapus Penerima Hibah dari Database"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1183,24 +1194,28 @@ export default function LembagaPage() {
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
-                  <button
-                    type="button"
-                    onClick={() => handleDeletePrompt(selectedDetail.id)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-600 hover:bg-red-100 transition"
-                  >
-                    <TrashIcon className="h-3.5 w-3.5" />
-                    <span>Hapus Data</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
+                  {!readOnly && (
                     <button
                       type="button"
-                      onClick={() => startEdit(selectedDetail)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 transition shadow-xs"
+                      onClick={() => handleDeletePrompt(selectedDetail.id)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-600 hover:bg-red-100 transition"
                     >
-                      <PencilIcon className="h-3.5 w-3.5" />
-                      <span>Edit Data</span>
+                      <TrashIcon className="h-3.5 w-3.5" />
+                      <span>Hapus Data</span>
                     </button>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    {!readOnly && (
+                      <button
+                        type="button"
+                        onClick={() => startEdit(selectedDetail)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 transition shadow-xs"
+                      >
+                        <PencilIcon className="h-3.5 w-3.5" />
+                        <span>Edit Data</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setSelectedDetail(null)}

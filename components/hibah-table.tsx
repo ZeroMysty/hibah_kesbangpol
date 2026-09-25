@@ -46,6 +46,8 @@ interface PenerimaHibah {
 
 export default function HibahTable() {
   const { mode, bidangId } = useMode();
+  // Mode Kaban view-only: hanya lihat & unduh, semua aksi ubah data disembunyikan
+  const readOnly = mode === "kaban";
   const { addNotification } = useNotifications();
   const { submitForReview } = useReview();
   const {
@@ -62,6 +64,7 @@ export default function HibahTable() {
 
   const [query, setQuery] = useState("");
   const [filterLemari, setFilterLemari] = useState("Semua");
+  const [filterTahun, setFilterTahun] = useState("Semua");
   const [filterBidang, setFilterBidang] = useState<number | "Semua">(
     mode === "bidang" ? bidangId : "Semua"
   );
@@ -124,8 +127,11 @@ export default function HibahTable() {
   // Read search query from URL parameter if directed from topbar search
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const q = new URLSearchParams(window.location.search).get("q");
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q");
+      const tahun = params.get("tahun");
       if (q) setQuery(q);
+      if (tahun) setFilterTahun(tahun);
     }
   }, []);
 
@@ -168,6 +174,8 @@ export default function HibahTable() {
   const filterInstansiAktif = penerimaBidangAktif.includes(filterInstansi)
     ? filterInstansi
     : "Semua";
+  const visibleProposals =
+    mode === "bidang" ? proposals.filter((p) => p.bidangId === bidangId) : proposals;
 
   const filtered = proposals.filter((p) => {
     // Hard filter: documents older than 5 years are not shown here
@@ -179,6 +187,8 @@ export default function HibahTable() {
       p.instansi.toLowerCase().includes(query.toLowerCase());
     const matchesLemari =
       filterLemari === "Semua" || p.lemariArsip === filterLemari;
+    const matchesTahun =
+      filterTahun === "Semua" || p.tahun === filterTahun;
     const matchesBidang =
       mode === "bidang"
         ? p.bidangId === bidangId
@@ -188,7 +198,7 @@ export default function HibahTable() {
       mode === "bidang"
         ? filterInstansiAktif === "Semua" || p.instansi === filterInstansiAktif
         : true;
-    return matchesQuery && matchesLemari && matchesBidang && matchesInstansi;
+    return matchesQuery && matchesLemari && matchesTahun && matchesBidang && matchesInstansi;
   });
 
   const ITEMS_PER_PAGE = 10;
@@ -199,7 +209,7 @@ export default function HibahTable() {
   // Reset to page 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, filterLemari, filterBidang, filterInstansi]);
+  }, [query, filterLemari, filterTahun, filterBidang, filterInstansi]);
 
   const handleAddProposal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -345,14 +355,14 @@ export default function HibahTable() {
             <div className="min-w-[90px] rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-center backdrop-blur-md">
               <p className="text-[10px] uppercase font-bold tracking-wider text-red-100">Total Berkas</p>
               <p className="text-2xl font-black text-white">
-                {proposals.filter((p) => !isOlderThan8Years(p.tahun || p.tanggal)).length}
+                {visibleProposals.filter((p) => !isOlderThan8Years(p.tahun || p.tanggal)).length}
               </p>
             </div>
             <div className="min-w-[90px] rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-center backdrop-blur-md">
               <p className="text-[10px] uppercase font-bold tracking-wider text-red-100">Total Nominal</p>
               <p className="text-2xl font-black text-white">
                 {(() => {
-                  const total = proposals.filter((p) => !isOlderThan8Years(p.tahun || p.tanggal)).reduce((s, p) => s + (p.nominal || 0), 0);
+                  const total = visibleProposals.filter((p) => !isOlderThan8Years(p.tahun || p.tanggal)).reduce((s, p) => s + (p.nominal || 0), 0);
                   if (total >= 1_000_000_000) return `${(total / 1_000_000_000).toFixed(1)} M`;
                   if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(0)} Jt`;
                   return "—";
@@ -364,8 +374,9 @@ export default function HibahTable() {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
-        <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Filter:</span>
+      <div className="grid gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Filter:</span>
 
         {/* Bidang Dropdown (admin) / Penerima Hibah Dropdown (bidang mode) */}
         {mode === "admin" ? (
@@ -408,6 +419,25 @@ export default function HibahTable() {
 
         <div className="h-4 w-px bg-zinc-200 hidden sm:block" />
 
+        {/* Tahun Dokumen Dropdown */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-zinc-500">Tahun:</span>
+          <select
+            value={filterTahun}
+            onChange={(e) => setFilterTahun(e.target.value)}
+            className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+          >
+            <option value="Semua">Semua Tahun</option>
+            {Array.from(new Set(proposals.map((p) => p.tahun).filter(Boolean)))
+              .sort((a, b) => Number(b) - Number(a))
+              .map((tahun) => (
+                <option key={tahun} value={tahun}>
+                  {tahun}
+                </option>
+              ))}
+          </select>
+        </div>
+
         {/* Lemari Arsip Dropdown */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-zinc-500">Lemari:</span>
@@ -425,13 +455,15 @@ export default function HibahTable() {
         </div>
 
 
+        </div>
+
         {/* Search & Actions on Right */}
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
           <SearchInput
             value={query}
             onChange={setQuery}
             placeholder="Cari nama hibah / instansi..."
-            className="w-44 sm:w-56"
+            className="w-full sm:w-56"
           />
 
           <button
@@ -443,13 +475,15 @@ export default function HibahTable() {
             <span className="hidden sm:inline">Export</span>
           </button>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            <span>Tambah Dokumen Baru</span>
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              <span>Tambah Dokumen Baru</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -530,13 +564,15 @@ export default function HibahTable() {
                           <span>Detail</span>
                         </button>
 
-                        <button
-                          onClick={() => setDeleteTarget(p)}
-                          className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"
-                          title="Hapus Usulan dari Database"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
+                        {!readOnly && (
+                          <button
+                            onClick={() => setDeleteTarget(p)}
+                            className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"
+                            title="Hapus Usulan dari Database"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -909,7 +945,7 @@ export default function HibahTable() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {mode === "admin" && !isEditing && (
+                {mode === "admin" && !isEditing && !readOnly && (
                   <button
                     onClick={() => {
                       setIsEditing(true);
@@ -1126,6 +1162,7 @@ export default function HibahTable() {
               </div>
 
               {/* Quick Lemari & Rak Switcher Inside Detail */}
+              {!readOnly && (
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1211,6 +1248,7 @@ export default function HibahTable() {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Document Viewer Inline */}
               <div className="rounded-2xl border border-zinc-200 overflow-hidden bg-zinc-900 shadow-inner">
@@ -1338,6 +1376,7 @@ export default function HibahTable() {
                   </button>
 
                   <div className="flex items-center gap-2">
+                    {!readOnly && (
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(selectedProposal)}
@@ -1347,6 +1386,7 @@ export default function HibahTable() {
                       <TrashIcon className="h-3.5 w-3.5" />
                       <span>Hapus Berkas</span>
                     </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => { setSelectedProposal(null); setIsEditing(false); }}

@@ -37,7 +37,7 @@ export default function Navbar({ open, onClose }: NavbarProps) {
     if (target === "beranda") {
       return (
         currentSlug === "beranda" ||
-        ["admin", "bidang1", "bidang2", "bidang3", "bidang4"].includes(currentSlug)
+        ["admin", "bidang1", "bidang2", "bidang3", "bidang4", "kaban"].includes(currentSlug)
       );
     }
     if (target === "dokumen") {
@@ -60,6 +60,7 @@ export default function Navbar({ open, onClose }: NavbarProps) {
     { name: "Denah Lemari", slug: "Lemari", href: getUrl("Lemari"), icon: ArchiveIcon },
     { name: "Penerima Hibah", slug: "Lembaga", href: getUrl("Lembaga"), icon: BuildingIcon },
     // Menu Laporan & Pengguna hanya tampil untuk mode admin, staff bidang tidak melihatnya sama sekali.
+    // Mode Kaban (view-only): lihat Laporan & Statistik saja, tanpa menu Pengguna.
     ...(mode === "admin"
       ? [
           {
@@ -71,6 +72,15 @@ export default function Navbar({ open, onClose }: NavbarProps) {
             badgeColor: "bg-red-600",
           },
           { name: "Pengguna", slug: "Pengguna", href: getUrl("Pengguna"), icon: UsersIcon },
+        ]
+      : mode === "kaban"
+      ? [
+          {
+            name: "Laporan",
+            slug: "Laporan",
+            href: getUrl("Laporan"),
+            icon: ChartIcon,
+          },
         ]
       : [
           {

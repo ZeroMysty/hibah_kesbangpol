@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS `sesi` (
 -- ============================================================
 INSERT IGNORE INTO `pengguna` (`nama_pengguna`, `email`, `password`, `peran`, `status`, `jabatan`) VALUES
 ('Administrator',  'admin@kesbangpol.go.id',   '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin',  'Aktif', 'Administrator Sistem'),
+('Kaban',          'kaban@kesbangpol.go.id',   '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'kaban',  'Aktif', 'Kepala Badan - Akses Lihat & Unduh'),
 ('Kepala Bidang 1','bidang1@kesbangpol.go.id',  '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'bidang', 'Aktif', 'Kepala Bidang 1 - Kesatuan Bangsa'),
 ('Kepala Bidang 2','bidang2@kesbangpol.go.id',  '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'bidang', 'Aktif', 'Kepala Bidang 2 - Politik Dalam Negeri'),
 ('Kepala Bidang 3','bidang3@kesbangpol.go.id',  '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'bidang', 'Aktif', 'Kepala Bidang 3 - Organisasi Kemasyarakatan'),

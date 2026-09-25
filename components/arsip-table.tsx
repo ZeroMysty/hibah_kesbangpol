@@ -60,6 +60,8 @@ const tahunList = [
 
 export default function ArsipTable() {
   const { mode, bidangId } = useMode();
+  // Mode Kaban view-only: hanya lihat & unduh, semua aksi ubah data disembunyikan
+  const readOnly = mode === "kaban";
   const { arsipList, isLoading, addArsip, updateArsipLokasi, deleteArsip, isOlderThan8Years } = useHibah();
 
   const [query, setQuery] = useState("");
@@ -441,13 +443,15 @@ export default function ArsipTable() {
             placeholder="Cari kode arsip, judul..."
             className="w-44 sm:w-56"
           />
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            <span>Tambah Arsip</span>
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              <span>Tambah Arsip</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -535,13 +539,15 @@ export default function ArsipTable() {
                           <span>Detail</span>
                         </button>
 
-                        <button
-                          onClick={() => setDeleteTarget(item)}
-                          className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                          title="Hapus Arsip dari Database"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
+                        {!readOnly && (
+                          <button
+                            onClick={() => setDeleteTarget(item)}
+                            className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            title="Hapus Arsip dari Database"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -986,7 +992,8 @@ export default function ArsipTable() {
                 </div>
               </div>
 
-              {/* Quick Lokasi Switcher Inside Detail */}
+              {/* Quick Lokasi Switcher Inside Detail — disembunyikan untuk mode kaban (view-only) */}
+              {!readOnly && (
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 space-y-3">
                 <div>
                   <p className="font-bold text-zinc-900 text-xs">Pindahkan Lokasi Fisik Lemari, Rak & Nomor</p>
@@ -1065,6 +1072,7 @@ export default function ArsipTable() {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Document Viewer Inline */}
               <div className="rounded-2xl border border-zinc-200 overflow-hidden bg-zinc-900 shadow-inner">
@@ -1202,6 +1210,7 @@ export default function ArsipTable() {
               </button>
 
               <div className="flex items-center gap-2">
+                {!readOnly && (
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(selectedDetail)}
@@ -1211,6 +1220,7 @@ export default function ArsipTable() {
                   <TrashIcon className="h-3.5 w-3.5" />
                   <span>Hapus Arsip</span>
                 </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setSelectedDetail(null)}
