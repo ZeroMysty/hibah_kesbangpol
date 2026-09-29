@@ -31,6 +31,14 @@ export default function DashboardAlerts({
   onClearYear,
   getUrl,
 }: DashboardAlertsProps) {
+  const hasAlerts =
+    (mode === "admin" && totalPendingCount > 0) ||
+    (mode === "bidang" && returnedCount > 0) ||
+    retensiCount > 0 ||
+    Boolean(selectedYear);
+
+  if (!hasAlerts) return null;
+
   return (
     <div className="space-y-3">
       {/* 1. Admin Verification Queue Alert */}
@@ -101,6 +109,7 @@ export default function DashboardAlerts({
           variant="zinc"
           size="sm"
           icon={<span className="inline-block h-2.5 w-2.5 rounded-full bg-red-600 animate-pulse" />}
+          iconBox={false}
           description={
             <span>
               Menampilkan data untuk: <strong className="font-bold text-zinc-900">Tahun {selectedYear}</strong>{" "}

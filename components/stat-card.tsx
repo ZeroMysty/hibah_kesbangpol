@@ -32,6 +32,16 @@ export default function StatCard({
   return (
     <div
       onClick={onClick}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
       className={`relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs transition hover:shadow-md ${

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import SectionCard from "@/components/section-card";
+import FilterPill from "@/components/filter-pill";
 import { ChartIcon } from "@/components/icons";
 import { formatRupiah, formatShortRupiah, BIDANG_HEX } from "@/lib/utils";
 import { bidangInfo, BidangId, Mode } from "@/context/mode-context";
@@ -137,25 +138,14 @@ export default function AnnualRecapChart({
           {mode === "admin" && (
             <div className="flex flex-wrap items-center gap-1">
               {(["Semua", 1, 2, 3, 4] as (BidangId | "Semua")[]).map((b) => (
-                <button
+                <FilterPill
                   key={String(b)}
-                  type="button"
+                  label={b === "Semua" ? "Semua" : `B.${b}`}
+                  active={filterBidangChartState === b}
                   onClick={() => onFilterBidangChartChange(b)}
-                  className={`cursor-pointer rounded-xl px-2.5 py-1 text-xs font-semibold transition-all ${
-                    filterBidangChartState === b
-                      ? b === "Semua"
-                        ? "bg-red-600 text-white shadow-xs"
-                        : "text-white shadow-xs"
-                      : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
-                  }`}
-                  style={
-                    filterBidangChartState === b && b !== "Semua"
-                      ? { backgroundColor: BIDANG_HEX[b as BidangId] }
-                      : {}
-                  }
-                >
-                  {b === "Semua" ? "Semua" : `B.${b}`}
-                </button>
+                  color={b !== "Semua" ? BIDANG_HEX[b as BidangId] : undefined}
+                  className="px-2.5 py-1 text-xs cursor-pointer shadow-xs"
+                />
               ))}
             </div>
           )}

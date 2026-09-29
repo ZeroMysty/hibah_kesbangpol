@@ -6,8 +6,8 @@ export type BidangBreakdownItem = {
   id: BidangId;
   info: (typeof bidangInfo)[BidangId];
   proposalCount: number;
-  arsipCount: number;
-  totalItems: number;
+  arsipCount?: number;
+  totalItems?: number;
   sumNominal: number;
   percentNominal: number;
 };
@@ -67,7 +67,12 @@ export default function BidangDistribution({
               <h3 className="mt-2 text-xs font-bold text-zinc-800 line-clamp-1">{item.info.fullName}</h3>
               <div className="mt-3 flex items-baseline justify-between">
                 <p className="text-base font-bold text-zinc-900">{formatShortRupiah(item.sumNominal)}</p>
-                <span className="text-xs font-semibold text-zinc-500">{item.proposalCount} berkas</span>
+                <span
+                  className="text-xs font-semibold text-zinc-500"
+                  title={item.arsipCount !== undefined ? `${item.proposalCount} usulan, ${item.arsipCount} arsip fisik` : undefined}
+                >
+                  {item.proposalCount} berkas
+                </span>
               </div>
               {/* Progress bar alokasi nominal */}
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">

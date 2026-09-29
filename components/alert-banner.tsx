@@ -5,6 +5,7 @@ export type AlertBannerVariant = "amber" | "rose" | "blue" | "zinc" | "emerald" 
 export type AlertBannerProps = {
   variant?: AlertBannerVariant;
   icon?: ReactNode;
+  iconBox?: boolean;
   title?: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
@@ -34,6 +35,12 @@ const VARIANT_STYLES: Record<
     title: "text-rose-900",
     description: "text-rose-700",
   },
+  red: {
+    container: "border-rose-200 bg-rose-50/90",
+    iconBg: "bg-rose-100 text-rose-700",
+    title: "text-rose-900",
+    description: "text-rose-700",
+  },
   blue: {
     container: "border-blue-100 bg-blue-50/70",
     iconBg: "bg-blue-100 text-blue-700",
@@ -52,12 +59,6 @@ const VARIANT_STYLES: Record<
     title: "text-emerald-900",
     description: "text-emerald-700",
   },
-  red: {
-    container: "border-red-200 bg-red-50/90",
-    iconBg: "bg-red-100 text-red-700",
-    title: "text-red-900",
-    description: "text-red-700",
-  },
 };
 
 /**
@@ -67,6 +68,7 @@ const VARIANT_STYLES: Record<
 export default function AlertBanner({
   variant = "amber",
   icon,
+  iconBox = true,
   title,
   description,
   action,
@@ -76,27 +78,30 @@ export default function AlertBanner({
 }: AlertBannerProps) {
   const styles = VARIANT_STYLES[variant] || VARIANT_STYLES.amber;
   const paddingClass = size === "sm" ? "px-4 py-2.5" : "p-4";
+  const bodyContent = description ?? children;
 
   return (
     <div
       className={`flex items-center justify-between gap-3 rounded-2xl border ${styles.container} ${paddingClass} shadow-xs ${className}`}
     >
       <div className="flex items-center gap-3 min-w-0">
-        {icon && (
-          <div
-            className={`flex shrink-0 items-center justify-center rounded-xl ${styles.iconBg} ${
-              size === "sm" ? "h-7 w-7 text-xs" : "h-10 w-10"
-            }`}
-          >
-            {icon}
-          </div>
-        )}
+        {icon &&
+          (iconBox ? (
+            <div
+              className={`flex shrink-0 items-center justify-center rounded-xl ${styles.iconBg} ${
+                size === "sm" ? "h-7 w-7 text-xs" : "h-10 w-10"
+              }`}
+            >
+              {icon}
+            </div>
+          ) : (
+            <div className="shrink-0 flex items-center">{icon}</div>
+          ))}
         <div className="min-w-0">
           {title && <p className={`text-sm font-bold ${styles.title}`}>{title}</p>}
-          {description && (
-            <div className={`text-xs ${styles.description} leading-relaxed`}>{description}</div>
+          {bodyContent && (
+            <div className={`text-xs ${styles.description} leading-relaxed`}>{bodyContent}</div>
           )}
-          {children}
         </div>
       </div>
       {action && <div className="shrink-0">{action}</div>}
