@@ -1,9 +1,10 @@
-﻿type FilterPillProps = {
+type FilterPillProps = {
   label: string;
   active: boolean;
   onClick: () => void;
   /** Warna hex opsional - dipakai untuk filter bidang */
   color?: string;
+  className?: string;
 };
 
 /**
@@ -16,7 +17,13 @@
  * // Filter bidang dengan warna kustom
  * <FilterPill label="Bidang 1" active={filterBidang === 1} onClick={() => setFilterBidang(1)} color="#3b82f6" />
  */
-export default function FilterPill({ label, active, onClick, color }: FilterPillProps) {
+export default function FilterPill({
+  label,
+  active,
+  onClick,
+  color,
+  className = "",
+}: FilterPillProps) {
   return (
     <button
       type="button"
@@ -28,7 +35,7 @@ export default function FilterPill({ label, active, onClick, color }: FilterPill
           : active && color
           ? "text-white shadow-md"
           : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
-      }`}
+      } ${className}`}
     >
       {label}
     </button>

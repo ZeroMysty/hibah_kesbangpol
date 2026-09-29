@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
@@ -25,6 +25,7 @@ import DeleteConfirmModal from "./delete-confirm-modal";
 import SearchInput from "./search-input";
 import FilterPill from "./filter-pill";
 import { TableEmptyRow } from "./empty-state";
+import StatCard from "./stat-card";
 
 const jenisList = [
   "Semua",
@@ -242,80 +243,51 @@ export default function ArsipTable() {
     <div className="space-y-6">
       {/* Stats Widget */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500">
-              Dokumen Tampil
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
-              <ArchiveIcon className="h-4 w-4" />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-zinc-900">
-            {filteredArsip.length} Dokumen
-          </p>
-          <p className="mt-0.5 text-[11px] text-zinc-400">
-            {showOlderDocs
+        <StatCard
+          label="Dokumen Tampil"
+          value={`${filteredArsip.length} Dokumen`}
+          sub={
+            showOlderDocs
               ? "Semua arsip termasuk > 8 tahun"
-              : "Arsip aktif (≤ 8 tahun)"}
-          </p>
-        </div>
+              : "Arsip aktif (≤ 8 tahun)"
+          }
+          icon={ArchiveIcon}
+          iconBg="bg-red-50 text-red-600"
+          accent="bg-red-500"
+        />
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500">
-              Berkas NPHD & SK
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-              <FileCheckIcon className="h-4 w-4" />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-zinc-900">
-            {
-              filteredArsip.filter(
-                (a) => a.jenis === "NPHD" || a.jenis === "SK Hibah"
-              ).length
-            }{" "}
-            NPHD/SK
-          </p>
-          <p className="mt-0.5 text-[11px] text-zinc-400">Tersusun di Lemari Arsip</p>
-        </div>
+        <StatCard
+          label="Berkas NPHD & SK"
+          value={`${
+            filteredArsip.filter(
+              (a) => a.jenis === "NPHD" || a.jenis === "SK Hibah"
+            ).length
+          } NPHD/SK`}
+          sub="Tersusun di Lemari Arsip"
+          icon={FileCheckIcon}
+          iconBg="bg-blue-50 text-blue-600"
+          accent="bg-blue-500"
+        />
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500">
-              LPJ Terverifikasi
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <CheckCircleIcon className="h-4 w-4" />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-zinc-900">
-            {
-              filteredArsip.filter((a) => a.jenis === "LPJ Terverifikasi")
-                .length
-            }{" "}
-            Berkas LPJ
-          </p>
-          <p className="mt-0.5 text-[11px] text-zinc-400">
-            Selesai Pertanggungjawaban
-          </p>
-        </div>
+        <StatCard
+          label="LPJ Terverifikasi"
+          value={`${
+            filteredArsip.filter((a) => a.jenis === "LPJ Terverifikasi").length
+          } Berkas LPJ`}
+          sub="Selesai Pertanggungjawaban"
+          icon={CheckCircleIcon}
+          iconBg="bg-emerald-50 text-emerald-600"
+          accent="bg-emerald-500"
+        />
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500">
-              Penyimpanan Lemari
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
-              <DocumentIcon className="h-4 w-4" />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-zinc-900">5 Lemari</p>
-          <p className="mt-0.5 text-[11px] text-zinc-400">
-            Lemari 01 s/d 04 & Khusus
-          </p>
-        </div>
+        <StatCard
+          label="Penyimpanan Lemari"
+          value="5 Lemari"
+          sub="Lemari 01 s/d 04 & Khusus"
+          icon={DocumentIcon}
+          iconBg="bg-purple-50 text-purple-600"
+          accent="bg-purple-500"
+        />
       </div>
 
       {/* Filter Bar */}
