@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useMode, bidangInfo, BidangId } from "@/context/mode-context";
@@ -43,6 +43,8 @@ interface PenerimaHibah {
   bidangId: BidangId;
 }
 
+export type FormType = "proposal" | "pencairan" | "lpj";
+
 
 export default function HibahTable() {
   const { mode, bidangId } = useMode();
@@ -71,6 +73,7 @@ export default function HibahTable() {
   const [filterInstansi, setFilterInstansi] = useState("Semua");
   // Auto-hide documents older than 5 years (permanent â€” only Arsip Hibah can show these)
   const [showAddModal, setShowAddModal] = useState(false);
+  const [activeFormType, setActiveFormType] = useState<FormType>("proposal");
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProposalItem | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -213,10 +216,19 @@ export default function HibahTable() {
 
   const handleAddProposal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !newInstansi.trim() || !newNominal) return;
+
+    if (!newName.trim() || !newInstansi.trim()) return;
+    if (activeFormType === "pencairan" && !newNominal.trim()) {
+      alert("Mohon masukkan nominal dana pencairan!");
+      return;
+    }
+    if (activeFormType === "lpj" && !newPic.trim()) {
+      alert("Mohon masukkan nama penanggung jawab (PIC) LPJ!");
+      return;
+    }
 
     setIsSubmitting(true);
-    const numericNominal = Number(newNominal.replace(/\D/g, "")) || 50000000;
+    const numericNominal = Number(newNominal.replace(/\D/g, "")) || 0;
     const currentYear = new Date().getFullYear().toString();
 
     // ── Mode BIDANG: kirim ke antrian review admin ──────────────────────
@@ -238,12 +250,19 @@ export default function HibahTable() {
         } catch {}
       }
 
+      const docCategory =
+        activeFormType === "pencairan"
+          ? "Pencairan Dana"
+          : activeFormType === "lpj"
+          ? "Laporan Pertanggungjawaban (LPJ)"
+          : newKategori;
+
       submitForReview({
         bidangId: newBidangId,
         bidangNama: bidangInfo[newBidangId].shortName,
         name: newName,
         instansi: newInstansi,
-        kategori: newKategori,
+        kategori: docCategory,
         nominal: numericNominal,
         tahun: currentYear,
         lemariArsip: newLemari,
@@ -258,21 +277,40 @@ export default function HibahTable() {
       });
 
       // Notifikasi ke admin (feed Laporan)
+      const jenisNama =
+        activeFormType === "pencairan"
+          ? "pencairan"
+          : activeFormType === "lpj"
+          ? "LPJ"
+          : "usulan";
       addNotification({
         type: "dokumen_masuk",
         bidangId: newBidangId,
         bidangNama: bidangInfo[newBidangId].shortName,
-        message: `Dokumen baru masuk untuk review: "${newName}" dari ${newInstansi}`,
+        message: `Dokumen ${jenisNama} baru masuk untuk review: "${newName}" dari ${newInstansi}`,
       });
 
       setIsSubmitting(false);
       setShowAddModal(false);
       setNewName(""); setNewInstansi(""); setNewNominal(""); setNewPic(""); setNewNoTelp(""); setNewFile(null);
-      showToast(`Dokumen "${newName}" berhasil dikirim ke admin untuk direview.`);
+      showToast(
+        activeFormType === "pencairan"
+          ? `Dokumen pencairan "${newName}" berhasil dikirim ke admin untuk direview.`
+          : activeFormType === "lpj"
+          ? `Dokumen LPJ "${newName}" berhasil dikirim ke admin untuk direview.`
+          : `Dokumen "${newName}" berhasil dikirim ke admin untuk direview.`
+      );
       return;
     }
 
     // ── Mode ADMIN: langsung simpan ke storage ──────────────────────────
+    const docCategory =
+      activeFormType === "pencairan"
+        ? "Pencairan Dana"
+        : activeFormType === "lpj"
+        ? "Laporan Pertanggungjawaban (LPJ)"
+        : newKategori;
+
     await addProposal({
       name: newName,
       instansi: newInstansi,
@@ -280,24 +318,36 @@ export default function HibahTable() {
       lemariArsip: newLemari,
       rakArsip: newRak,
       nomorArsip: newNomor,
-      kategori: newKategori,
+      kategori: docCategory,
       nominal: numericNominal,
       pic: newPic,
       noTelp: newNoTelp,
       file: newFile,
     });
 
+    const jenisLabel =
+      activeFormType === "pencairan"
+        ? "pencairan dana"
+        : activeFormType === "lpj"
+        ? "LPJ"
+        : "usulan hibah";
     addNotification({
       type: "hibah",
       bidangId: newBidangId,
       bidangNama: bidangInfo[newBidangId].shortName,
-      message: `Usulan hibah baru: "${newName}" dari ${newInstansi}`,
+      message: `Dokumen ${jenisLabel} baru: "${newName}" dari ${newInstansi}`,
     });
 
     setIsSubmitting(false);
     setShowAddModal(false);
     setNewName(""); setNewInstansi(""); setNewNominal(""); setNewPic(""); setNewNoTelp(""); setNewFile(null);
-    showToast(`Dokumen usulan hibah berhasil diarsipkan ke ${newLemari}, ${newRak}, ${newNomor}!`);
+    showToast(
+      activeFormType === "pencairan"
+        ? `Dokumen pencairan dana berhasil diarsipkan ke ${newLemari}, ${newRak}, ${newNomor}!`
+        : activeFormType === "lpj"
+        ? `Dokumen LPJ berhasil diarsipkan ke ${newLemari}, ${newRak}, ${newNomor}!`
+        : `Dokumen usulan hibah berhasil diarsipkan ke ${newLemari}, ${newRak}, ${newNomor}!`
+    );
   };
 
   const handleChangeLokasi = (
@@ -477,11 +527,15 @@ export default function HibahTable() {
 
           {!readOnly && (
             <button
-              onClick={() => setShowAddModal(true)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-red-600/25 transition hover:bg-red-500 active:scale-[0.98]"
+              type="button"
+              onClick={() => {
+                setActiveFormType("proposal");
+                setShowAddModal(true);
+              }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-3.5 text-xs font-bold text-white shadow-md shadow-red-600/25 transition hover:from-red-500 hover:to-rose-500 active:scale-[0.98]"
             >
               <PlusIcon className="h-3.5 w-3.5" />
-              <span>Tambah Dokumen Baru</span>
+              <span>Buat Form Hibah</span>
             </button>
           )}
         </div>
@@ -650,23 +704,30 @@ export default function HibahTable() {
       </div>
 
       {/* ========================================================================= */}
-      {/* Modal: Tambah Usulan Hibah */}
+      {/* Modal: Proposal Form / Form Pencairan / Form LPJ */}
       {/* ========================================================================= */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl bg-white shadow-2xl overflow-hidden">
+            {/* Header Modal */}
             <div className="flex shrink-0 items-start justify-between border-b border-zinc-100 p-6 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-zinc-900">
-                  {mode === "bidang" ? "Ajukan Dokumen Hibah" : "Formulir Pengarsipan Hibah Baru"}
+                  {activeFormType === "proposal" && "Proposal Form"}
+                  {activeFormType === "pencairan" && "Form Pencairan"}
+                  {activeFormType === "lpj" && "Form LPJ"}
                 </h3>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  {mode === "bidang"
-                    ? "Dokumen akan dikirim ke admin untuk direview sebelum disimpan ke storage."
-                    : "Input data usulan hibah dan tentukan Lemari, Rak, serta Nomor penyimpanan berkas fisik & digital."}
+                  {activeFormType === "proposal" &&
+                    "Input data usulan proposal hibah dan alokasi Lemari, Rak, serta Nomor penyimpanan."}
+                  {activeFormType === "pencairan" &&
+                    "Formulir permohonan pencairan dana hibah dan kelengkapan berkas."}
+                  {activeFormType === "lpj" &&
+                    "Formulir pelaporan pertanggungjawaban (LPJ) penggunaan dana hibah."}
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setShowAddModal(false)}
                 className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition"
               >
@@ -676,237 +737,664 @@ export default function HibahTable() {
 
             <form onSubmit={handleAddProposal} className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div>
-                <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Nama Program / Usulan Kegiatan Hibah *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Misal: Pelatihan Kader Bela Negara & Wasbang 2026"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
-                />
-              </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Lembaga / Organisasi Pemohon *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Misal: Paguyuban Seni Budaya Kota"
-                    value={newInstansi}
-                    onChange={(e) => setNewInstansi(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Nominal Dana Diajukan (Rp) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Misal: Rp 120.000.000"
-                    value={newNominal}
-                    onChange={(e) => setNewNominal(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs font-semibold text-zinc-900 outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
-                  />
-                </div>
-              </div>
+                {/* ────────────────────────────────────────────────────────── */}
+                {/* 1. TAMPILAN: PROPOSAL FORM                                 */}
+                {/* ────────────────────────────────────────────────────────── */}
+                {activeFormType === "proposal" && (
+                  <>
+                    {/* Nama Program / Usulan Kegiatan Hibah */}
+                    <div>
+                      <label className="mb-1 block text-xs font-bold text-zinc-700">
+                        Nama Program / Usulan Kegiatan Hibah *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Pelatihan Kader Bela Negara & Wasbang 2026"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
+                    </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Tujuan Bidang Teknis *
-                </label>
-                <select
-                  value={newBidangId}
-                  onChange={(e) => {
-                    const id = Number(e.target.value) as BidangId;
-                    setNewBidangId(id);
-                    setNewLemari(`Lemari Arsip 0${id}` as LemariArsip);
-                  }}
-                  className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
-                >
-                  {([1, 2, 3, 4] as BidangId[]).map((id) => (
-                    <option key={id} value={id}>
-                      {bidangInfo[id].shortName} ({bidangInfo[id].fullName})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Lokasi Fisik Penyimpanan: Lemari, Rak, Nomor */}
-              <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <ArchiveIcon className="h-4 w-4 text-red-600" />
-                  <p className="text-xs font-bold text-zinc-900">Alokasi Lokasi Fisik Penyimpanan Arsip</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold text-zinc-700">
-                      1. Lemari Arsip *
-                    </label>
-                    <select
-                      value={newLemari}
-                      onChange={(e) => setNewLemari(e.target.value as LemariArsip)}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
-                    >
-                      {LEMARI_OPTIONS.map((opt) => (
-                        <option key={opt.id} value={opt.id}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold text-zinc-700">
-                      2. Posisi Rak *
-                    </label>
-                    <select
-                      value={newRak}
-                      onChange={(e) => setNewRak(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
-                    >
-                      {RAK_OPTIONS.map((rak) => (
-                        <option key={rak} value={rak}>
-                          {rak}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold text-zinc-700">
-                      3. Nomor Berkas / Urut *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Misal: No. 05"
-                      value={newNomor}
-                      onChange={(e) => setNewNomor(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono text-zinc-900 outline-none focus:border-red-400"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Kategori Program / Kegiatan *
-                  </label>
-                  <select
-                    value={newKategori}
-                    onChange={(e) => setNewKategori(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
-                  >
-                    <option value="Seni Budaya">Seni Budaya & Tradisi</option>
-                    <option value="Kerukunan">Kerukunan Antar Umat Beragama</option>
-                    <option value="Pemuda">Kepemudaan & Olahraga</option>
-                    <option value="Pendidikan">Pendidikan & Karakter Bangsa</option>
-                    <option value="Politik">Pendidikan Politik Masyarakat</option>
-                    <option value="Kawasan">Kewaspadaan & Pencegahan Konflik</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-zinc-700">
-                    Nama Penanggung Jawab (PIC)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Nama Ketua / Pengurus"
-                    value={newPic}
-                    onChange={(e) => setNewPic(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400"
-                  />
-                </div>
-              </div>
-
-              {/* Upload Berkas Proposal */}
-              <div>
-                <label className="mb-1 block text-xs font-bold text-zinc-700">
-                  Unggah Dokumen Berkas Hibah (NPHD/Proposal/LPJ) *
-                </label>
-                <div className="relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50/60 p-4 text-center hover:border-red-500 hover:bg-red-50/20 transition-all cursor-pointer">
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setNewFile(e.target.files[0]);
-                      }
-                    }}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  />
-                  {newFile ? (
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                        <DocumentIcon className="h-6 w-6" />
+                    {/* Grid: Lembaga Pemohon & Tujuan Bidang Teknis (menggantikan Nominal Dana) */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-bold text-zinc-700">
+                          Lembaga / Organisasi Pemohon *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Misal: Paguyuban Seni Budaya Kota"
+                          value={newInstansi}
+                          onChange={(e) => setNewInstansi(e.target.value)}
+                          className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                        />
                       </div>
-                      <div className="text-left">
-                        <p className="text-xs font-bold text-zinc-900 truncate max-w-xs">{newFile.name}</p>
-                        <p className="text-[11px] text-emerald-600 font-semibold">
-                          {(newFile.size / (1024 * 1024)).toFixed(2)} MB â€¢ Berkas Terpilih (Siap dipratinjau)
+                      <div>
+                        <label className="mb-1 block text-xs font-bold text-zinc-700">
+                          Tujuan Bidang Teknis *
+                        </label>
+                        <select
+                          value={newBidangId}
+                          onChange={(e) => {
+                            const id = Number(e.target.value) as BidangId;
+                            setNewBidangId(id);
+                            setNewLemari(`Lemari Arsip 0${id}` as LemariArsip);
+                          }}
+                          className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
+                        >
+                          {([1, 2, 3, 4] as BidangId[]).map((id) => (
+                            <option key={id} value={id}>
+                              {bidangInfo[id].shortName} ({bidangInfo[id].fullName})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Alokasi Lemari: Naik ke posisi tempat tujuan bidang teknis sebelumnya */}
+                    <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <ArchiveIcon className="h-4 w-4 text-red-600" />
+                        <p className="text-xs font-bold text-zinc-900">Alokasi Lokasi Fisik Penyimpanan Arsip</p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                            1. Lemari Arsip *
+                          </label>
+                          <select
+                            value={newLemari}
+                            onChange={(e) => setNewLemari(e.target.value as LemariArsip)}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                          >
+                            {LEMARI_OPTIONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                            2. Posisi Rak *
+                          </label>
+                          <select
+                            value={newRak}
+                            onChange={(e) => setNewRak(e.target.value)}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                          >
+                            {RAK_OPTIONS.map((rak) => (
+                              <option key={rak} value={rak}>
+                                {rak}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                            3. Nomor Berkas / Urut *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Misal: No. 05"
+                            value={newNomor}
+                            onChange={(e) => setNewNomor(e.target.value)}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono text-zinc-900 outline-none focus:border-red-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dropdown Pindah Halaman/Form */}
+                    <div>
+                      <label className="mb-1 block text-xs font-bold text-zinc-700">
+                        Pindah Halaman / Form
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={activeFormType}
+                          onChange={(e) => setActiveFormType(e.target.value as FormType)}
+                          className="w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs font-medium text-zinc-800 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10 cursor-pointer"
+                        >
+                          <option value="proposal">Proposal Form</option>
+                          <option value="pencairan">Form Pencairan</option>
+                          <option value="lpj">Form LPJ</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-zinc-400">
+                          <ChevronDownIcon className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ────────────────────────────────────────────────────────── */}
+                {/* 2. TAMPILAN: FORM PENCAIRAN                                 */}
+                {/* ────────────────────────────────────────────────────────── */}
+                {activeFormType === "pencairan" && (
+                  <>
+                    {/* Bantuan Auto-Isi dari Proposal yang Ada */}
+                    {proposals.length > 0 && (
+                      <div className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40 p-2.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                          <span className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1">
+                            <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            Auto-isi dari daftar proposal terdaftar:
+                          </span>
+                          <select
+                            defaultValue=""
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              const p = proposals.find((x) => x.id === val);
+                              if (p) {
+                                setNewName(p.name);
+                                setNewInstansi(p.instansi);
+                                setNewBidangId(p.bidangId);
+                                setNewLemari(p.lemariArsip || "Lemari Arsip 01");
+                                setNewRak(p.rakArsip || "Rak 01");
+                                setNewNomor(p.nomorArsip || "No. 01");
+                                if (p.nominal) {
+                                  setNewNominal(p.nominal.toLocaleString("id-ID"));
+                                }
+                              }
+                            }}
+                            className="rounded-lg border border-emerald-300 bg-white px-2 py-1 text-[11px] font-medium text-zinc-700 outline-none focus:border-emerald-500"
+                          >
+                            <option value="" disabled>-- Pilih Proposal untuk Auto-Isi --</option>
+                            {proposals.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} ({p.instansi})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Nama Program / Kegiatan Hibah (Auto-isi dari Proposal) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-zinc-700">
+                          Nama Program / Usulan Kegiatan Hibah *
+                        </label>
+                        {newName && (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                            <CheckCircleIcon className="h-3 w-3 text-emerald-600" />
+                            Auto-isi dari Proposal
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Pelatihan Kader Bela Negara & Wasbang 2026"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
+                    </div>
+
+                    {/* Grid: Lembaga Penerima & Tujuan Bidang Teknis (Auto-isi dari Proposal) */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-zinc-700">
+                            Lembaga / Organisasi Penerima *
+                          </label>
+                          {newInstansi && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                              Auto-isi
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Misal: Paguyuban Seni Budaya Kota"
+                          value={newInstansi}
+                          onChange={(e) => setNewInstansi(e.target.value)}
+                          className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-zinc-700">
+                            Tujuan Bidang Teknis *
+                          </label>
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                            Auto-isi
+                          </span>
+                        </div>
+                        <select
+                          value={newBidangId}
+                          onChange={(e) => {
+                            const id = Number(e.target.value) as BidangId;
+                            setNewBidangId(id);
+                            setNewLemari(`Lemari Arsip 0${id}` as LemariArsip);
+                          }}
+                          className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
+                        >
+                          {([1, 2, 3, 4] as BidangId[]).map((id) => (
+                            <option key={id} value={id}>
+                              {bidangInfo[id].shortName} ({bidangInfo[id].fullName})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Textbox Nominal Dana Pencairan (Rp) */}
+                    <div>
+                      <label className="mb-1 block text-xs font-bold text-zinc-700">
+                        Nominal Dana Pencairan (Rp) *
+                      </label>
+                      <div className="relative">
+                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-xs font-bold text-zinc-400">
+                          Rp
+                        </span>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Misal: 120.000.000"
+                          value={newNominal}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, "");
+                            const formatted = raw ? Number(raw).toLocaleString("id-ID") : "";
+                            setNewNominal(formatted);
+                          }}
+                          className="w-full rounded-xl border border-zinc-200 pl-10 pr-3.5 py-2.5 text-xs font-bold text-zinc-900 outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Alokasi Lemari: Lemari, Rak, Nomor */}
+                    <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <ArchiveIcon className="h-4 w-4 text-red-600" />
+                        <p className="text-xs font-bold text-zinc-900">Alokasi Lokasi Fisik Penyimpanan Arsip</p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                            1. Lemari Arsip *
+                          </label>
+                          <select
+                            value={newLemari}
+                            onChange={(e) => setNewLemari(e.target.value as LemariArsip)}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                          >
+                            {LEMARI_OPTIONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                            2. Posisi Rak *
+                          </label>
+                          <select
+                            value={newRak}
+                            onChange={(e) => setNewRak(e.target.value)}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                          >
+                            {RAK_OPTIONS.map((rak) => (
+                              <option key={rak} value={rak}>
+                                {rak}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                            3. Nomor Berkas / Urut *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Misal: No. 05"
+                            value={newNomor}
+                            onChange={(e) => setNewNomor(e.target.value)}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono text-zinc-900 outline-none focus:border-red-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dropdown Pindah Halaman / Form */}
+                    <div>
+                      <label className="mb-1 block text-xs font-bold text-zinc-700">
+                        Pindah Halaman / Form
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={activeFormType}
+                          onChange={(e) => setActiveFormType(e.target.value as FormType)}
+                          className="w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs font-medium text-zinc-800 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10 cursor-pointer"
+                        >
+                          <option value="proposal">Proposal Form</option>
+                          <option value="pencairan">Form Pencairan</option>
+                          <option value="lpj">Form LPJ</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-zinc-400">
+                          <ChevronDownIcon className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ────────────────────────────────────────────────────────── */}
+                {/* 3. TAMPILAN: FORM LPJ                                      */}
+                {/* ────────────────────────────────────────────────────────── */}
+                {activeFormType === "lpj" && (
+                  <>
+                    {/* Bantuan Auto-Isi dari Proposal yang Ada */}
+                    {proposals.length > 0 && (
+                      <div className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40 p-2.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                          <span className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1">
+                            <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            Auto-isi dari daftar proposal terdaftar:
+                          </span>
+                          <select
+                            defaultValue=""
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              const p = proposals.find((x) => x.id === val);
+                              if (p) {
+                                setNewName(p.name);
+                                setNewInstansi(p.instansi);
+                                setNewBidangId(p.bidangId);
+                                setNewLemari(p.lemariArsip || "Lemari Arsip 01");
+                                setNewRak(p.rakArsip || "Rak 01");
+                                setNewNomor(p.nomorArsip || "No. 01");
+                                if (p.pic) {
+                                  setNewPic(p.pic);
+                                }
+                              }
+                            }}
+                            className="rounded-lg border border-emerald-300 bg-white px-2 py-1 text-[11px] font-medium text-zinc-700 outline-none focus:border-emerald-500"
+                          >
+                            <option value="" disabled>-- Pilih Proposal untuk Auto-Isi --</option>
+                            {proposals.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} ({p.instansi})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Nama Program / Kegiatan Hibah (Auto-isi dari Proposal) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-zinc-700">
+                          Nama Program / Usulan Kegiatan Hibah *
+                        </label>
+                        {newName && (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                            <CheckCircleIcon className="h-3 w-3 text-emerald-600" />
+                            Auto-isi dari Proposal
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Pelatihan Kader Bela Negara & Wasbang 2026"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
+                    </div>
+
+                    {/* Grid: Lembaga Penerima & Tujuan Bidang Teknis (Auto-isi dari Proposal) */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-zinc-700">
+                            Lembaga / Organisasi Penerima *
+                          </label>
+                          {newInstansi && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                              Auto-isi
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Misal: Paguyuban Seni Budaya Kota"
+                          value={newInstansi}
+                          onChange={(e) => setNewInstansi(e.target.value)}
+                          className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-zinc-700">
+                            Tujuan Bidang Teknis *
+                          </label>
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                            Auto-isi
+                          </span>
+                        </div>
+                        <select
+                          value={newBidangId}
+                          onChange={(e) => {
+                            const id = Number(e.target.value) as BidangId;
+                            setNewBidangId(id);
+                            setNewLemari(`Lemari Arsip 0${id}` as LemariArsip);
+                          }}
+                          className="w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-medium outline-none focus:border-red-400"
+                        >
+                          {([1, 2, 3, 4] as BidangId[]).map((id) => (
+                            <option key={id} value={id}>
+                              {bidangInfo[id].shortName} ({bidangInfo[id].fullName})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Nama Penanggung Jawab (PIC) */}
+                    <div>
+                      <label className="mb-1 block text-xs font-bold text-zinc-700">
+                        Nama Penanggung Jawab (PIC) *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Nama Ketua / Bendahara / PIC Kegiatan"
+                        value={newPic}
+                        onChange={(e) => setNewPic(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+                      />
+                    </div>
+
+                    {/* Alokasi Lemari: Lemari, Rak, Nomor */}
+                    <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <ArchiveIcon className="h-4 w-4 text-red-600" />
+                        <p className="text-xs font-bold text-zinc-900">Alokasi Lokasi Fisik Penyimpanan Arsip</p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                            1. Lemari Arsip *
+                          </label>
+                          <select
+                            value={newLemari}
+                            onChange={(e) => setNewLemari(e.target.value as LemariArsip)}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                          >
+                            {LEMARI_OPTIONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                            2. Posisi Rak *
+                          </label>
+                          <select
+                            value={newRak}
+                            onChange={(e) => setNewRak(e.target.value)}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-800 outline-none focus:border-red-400"
+                          >
+                            {RAK_OPTIONS.map((rak) => (
+                              <option key={rak} value={rak}>
+                                {rak}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold text-zinc-700">
+                            3. Nomor Berkas / Urut *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Misal: No. 05"
+                            value={newNomor}
+                            onChange={(e) => setNewNomor(e.target.value)}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold font-mono text-zinc-900 outline-none focus:border-red-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dropdown Pindah Halaman / Form */}
+                    <div>
+                      <label className="mb-1 block text-xs font-bold text-zinc-700">
+                        Pindah Halaman / Form
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={activeFormType}
+                          onChange={(e) => setActiveFormType(e.target.value as FormType)}
+                          className="w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-xs font-medium text-zinc-800 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-500/10 cursor-pointer"
+                        >
+                          <option value="proposal">Proposal Form</option>
+                          <option value="pencairan">Form Pencairan</option>
+                          <option value="lpj">Form LPJ</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-zinc-400">
+                          <ChevronDownIcon className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ────────────────────────────────────────────────────────── */}
+                {/* FORM PALING BAWAH: UPLOAD PDF                              */}
+                {/* ────────────────────────────────────────────────────────── */}
+                <div className="pt-2">
+                  <label className="mb-1 block text-xs font-bold text-zinc-700 flex items-center justify-between">
+                    <span>
+                      Unggah Dokumen Berkas {activeFormType === "proposal" ? "Proposal" : activeFormType === "pencairan" ? "Pencairan" : "LPJ"} (Format PDF) *
+                    </span>
+                    <span className="text-[10px] text-red-600 font-semibold uppercase">PDF Only</span>
+                  </label>
+                  <div className="relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50/60 p-5 text-center hover:border-red-500 hover:bg-red-50/20 transition-all cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setNewFile(e.target.files[0]);
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    />
+                    {newFile ? (
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-600">
+                          <DocumentIcon className="h-6 w-6" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-bold text-zinc-900 truncate max-w-xs">{newFile.name}</p>
+                          <p className="text-[11px] text-red-600 font-semibold">
+                            {(newFile.size / (1024 * 1024)).toFixed(2)} MB &bull; Berkas PDF Siap Dipratinjau
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <DocumentIcon className="mx-auto h-7 w-7 text-red-500/70" />
+                        <p className="text-xs font-bold text-zinc-800">
+                          Pilih file dokumen hibah (Format PDF)
+                        </p>
+                        <p className="text-[10px] text-zinc-400">
+                          Dokumen PDF resmi dapat langsung dipratinjau tanpa perlu diunduh
                         </p>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <DocumentIcon className="mx-auto h-7 w-7 text-zinc-400" />
-                      <p className="text-xs font-semibold text-zinc-700">
-                        Pilih file dokumen hibah (PDF / Dokumen / Gambar)
-                      </p>
-                      <p className="text-[10px] text-zinc-400">Dokumen dapat langsung dilihat di sistem tanpa perlu diunduh</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Status & Storage Notice */}
-              <div className={`rounded-xl border p-3 text-xs flex items-center gap-2 ${
-                mode === "bidang"
-                  ? "border-amber-200 bg-amber-50 text-amber-800"
-                  : "border-zinc-200 bg-zinc-50/80 text-zinc-700"
-              }`}>
-                <ArchiveIcon className={`h-4 w-4 shrink-0 ${mode === "bidang" ? "text-amber-600" : "text-red-600"}`} />
-                {mode === "bidang" ? (
-                  <span>Dokumen akan <strong>dikirim ke admin</strong> untuk direview. Jika disetujui, otomatis tersimpan ke <strong>{newLemari} &bull; {newRak} &bull; {newNomor}</strong>.</span>
-                ) : (
-                  <span>Dokumen akan tersimpan di <strong>{newLemari} &bull; {newRak} &bull; {newNomor}</strong> dan terintegrasi otomatis ke sistem arsip digital.</span>
+                {/* Status & Storage Notice untuk Proposal Form, Form Pencairan, & Form LPJ */}
+                {(activeFormType === "proposal" || activeFormType === "pencairan" || activeFormType === "lpj") && (
+                  <div className={`rounded-xl border p-3 text-xs flex items-center gap-2 ${
+                    mode === "bidang"
+                      ? "border-amber-200 bg-amber-50 text-amber-800"
+                      : "border-zinc-200 bg-zinc-50/80 text-zinc-700"
+                  }`}>
+                    <ArchiveIcon className={`h-4 w-4 shrink-0 ${mode === "bidang" ? "text-amber-600" : "text-red-600"}`} />
+                    {mode === "bidang" ? (
+                      <span>Dokumen akan <strong>dikirim ke admin</strong> untuk direview. Jika disetujui, otomatis tersimpan ke <strong>{newLemari} &bull; {newRak} &bull; {newNomor}</strong>.</span>
+                    ) : (
+                      <span>Dokumen akan tersimpan di <strong>{newLemari} &bull; {newRak} &bull; {newNomor}</strong> dan terintegrasi otomatis ke sistem arsip digital.</span>
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
 
-            <div className="flex shrink-0 items-center justify-end gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition shadow-2xs"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98] disabled:opacity-50"
-              >
-                {isSubmitting
-                  ? (mode === "bidang" ? "Mengirim ke Admin..." : "Menyimpan & Mengarsipkan...")
-                  : (mode === "bidang" ? "Kirim ke Admin untuk Review" : "Simpan & Arsipkan Berkas")}
-              </button>
-            </div>
-          </form>
+              {/* Modal Footer Actions */}
+              <div className="flex shrink-0 items-center justify-end gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition shadow-2xs"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-rose-700 transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  {isSubmitting
+                    ? (mode === "bidang" ? "Mengirim ke Admin..." : "Menyimpan & Mengarsipkan...")
+                    : activeFormType === "proposal"
+                    ? (mode === "bidang" ? "Kirim ke Admin untuk Review" : "Simpan & Arsipkan Berkas")
+                    : activeFormType === "pencairan"
+                    ? "Simpan Dokumen Pencairan"
+                    : "Simpan Dokumen LPJ"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
-    )}
+      )}
 
       {/* ========================================================================= */}
       {/* Modal: Detail Dokumen & Berkas */}
